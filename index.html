@@ -779,8 +779,10 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     byId("sumview").hidden=v!=="sum";
     byId("view-reg").setAttribute("aria-selected",v==="reg");
     byId("view-sum").setAttribute("aria-selected",v==="sum");
+    try{localStorage.setItem("gradecut-view",v)}catch(e){}   // 선택한 탭만 이 브라우저에 기억 (파일·점수는 저장하지 않음)
   }
   byId("view-reg").onclick=function(){setView("reg")};
   byId("view-sum").onclick=function(){setView("sum")};
+  try{if(localStorage.getItem("gradecut-view")==="sum")setView("sum")}catch(e){}
 })();
 </script>
