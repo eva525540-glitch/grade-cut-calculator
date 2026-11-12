@@ -20,11 +20,11 @@ main{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
 @media(max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.side{position:static}}
 @media(max-width:760px){.pair{grid-template-columns:minmax(0,1fr)}}
 header{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
-h1{font-size:2rem;font-weight:900;letter-spacing:-.02em;line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:1.7rem;font-weight:900;letter-spacing:-.02em;line-height:1.1;margin:0;text-wrap:balance}
 .sub{margin:6px 0 0;color:var(--muted)}
 section{display:flex;flex-direction:column;gap:12px;min-width:0;border-top:6px solid var(--line);padding-top:12px}
 h2{font-size:1.1rem;font-weight:900;margin:0;display:flex;align-items:center;gap:8px}
-h2::before{content:"";width:14px;height:14px;background:var(--accent);flex:none}
+h2::before{content:"";width:10px;height:10px;background:var(--fg);flex:none}
 label,.note{font-size:.85rem;color:var(--muted)}
 .note{margin:0}
 .drop{display:flex;flex-direction:column;align-items:flex-start;gap:8px;background:var(--panel);border:3px solid var(--line);padding:16px;cursor:pointer}
@@ -43,23 +43,22 @@ select,input[type=number]{font:inherit;color:var(--fg);background:var(--panel);b
 .msg{color:var(--warn);font-weight:700;font-size:.9rem;min-height:1.2em}
 #meta{color:var(--fg)}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-.stat{background:var(--panel);padding:12px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat{background:var(--panel);padding:8px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .stat small{font-size:.8rem;color:var(--muted)}
-.stat strong{font-size:1.6rem;font-weight:900;line-height:1.15;font-variant-numeric:tabular-nums}
+.stat strong{font-size:1.3rem;font-weight:900;line-height:1.15;font-variant-numeric:tabular-nums}
 .stat.main{background:var(--fg);color:#fff}
 .stat.main small{color:#d6d6d6}
-.grades{display:flex;flex-direction:column;gap:6px}
-.grow{display:grid;grid-template-columns:48px minmax(0,1.25fr) minmax(0,1fr);align-items:stretch;gap:8px}
-.gno{background:var(--fg);color:#fff;font-weight:900;font-size:1.5rem;display:flex;align-items:center;justify-content:center}
-.gcut{background:var(--accent);color:var(--fg);padding:10px 16px;display:flex;flex-direction:column;justify-content:center;font-variant-numeric:tabular-nums}
-.gcut b{font-size:2.1rem;font-weight:900;line-height:1.1;letter-spacing:-.02em}
-.gcut span{font-size:.9rem;font-weight:500}
-.gcut.none{background:var(--bar)}
-.gcut.none b{font-size:1.3rem}
-.ginfo{background:var(--panel);padding:10px 16px;display:flex;flex-direction:column;justify-content:center;font-variant-numeric:tabular-nums}
-.ginfo b{font-size:1.4rem;font-weight:900;line-height:1.2}
-.ginfo span{font-size:.82rem;color:var(--muted)}
-@media(max-width:620px){.grow{grid-template-columns:44px minmax(0,1fr)}.ginfo{grid-column:1 / -1}}
+.grades{display:flex;flex-direction:column;gap:4px}
+.grow{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:12px;background:var(--panel);padding:6px 12px 6px 6px}
+.gno{background:var(--fg);color:#fff;font-weight:900;font-size:1rem;height:34px;display:flex;align-items:center;justify-content:center}
+.gcut{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:10px;font-variant-numeric:tabular-nums;min-width:0}
+.gcut b{font-size:1.35rem;font-weight:900;line-height:1.2;letter-spacing:-.01em;border-bottom:3px solid var(--accent)}
+.gcut span{font-size:.82rem;color:var(--muted)}
+.gcut.none b{border-bottom-color:var(--bar);color:var(--muted);font-size:1.1rem}
+.ginfo{display:flex;align-items:baseline;gap:8px;justify-content:flex-end;flex-wrap:wrap;font-variant-numeric:tabular-nums;text-align:right}
+.ginfo b{font-size:1.05rem;font-weight:900}
+.ginfo span{font-size:.78rem;color:var(--muted)}
+@media(max-width:620px){.grow{grid-template-columns:34px minmax(0,1fr)}.ginfo{grid-column:2;justify-content:flex-start}}
 .placeholder{background:var(--panel);padding:20px;color:var(--muted)}
 .classes{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}
 .cls{background:var(--panel);padding:10px 14px;display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center;font-variant-numeric:tabular-nums}
@@ -69,7 +68,7 @@ select,input[type=number]{font:inherit;color:var(--fg);background:var(--panel);b
 .histwrap{background:var(--panel);padding:14px 14px 8px}
 .hist{display:flex;align-items:flex-end;gap:3px;height:130px;border-bottom:3px solid var(--line)}
 .hist i{flex:1;min-width:0;background:var(--bar)}
-.hist i.hi{background:var(--accent)}
+.hist i.hi{background:var(--fg)}
 .axis{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:4px}
 </style>
 
@@ -151,7 +150,7 @@ select,input[type=number]{font:inherit;color:var(--fg);background:var(--panel);b
             <div class="hist" id="hist" role="img" aria-label="점수 분포 막대그래프"></div>
             <div class="axis"><span>0점</span><span id="ax-mid">50점</span><span id="ax-top">100점</span></div>
           </div>
-          <p class="note">20구간으로 나눈 분포이고, 주황 막대는 등급컷이 있는 구간입니다.</p>
+          <p class="note">20구간으로 나눈 분포이고, 검은 막대는 등급컷이 있는 구간입니다.</p>
         </section>
       </div>
     </div>
