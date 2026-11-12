@@ -421,7 +421,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       var mean=sc.reduce(function(a,b){return a+b},0)/n;
       var sd=Math.sqrt(sc.reduce(function(a,b){return a+(b-mean)*(b-mean)},0)/n);
       $("stats").innerHTML=
-        '<div class="stat main"><small>응시 인원</small><strong>'+n+'명</strong>'+(note?'<small>'+esc(note)+'</small>':'')+'</div>'+
+        '<div class="stat main"><small>응시 인원</small><strong>'+n+'명</strong>'+(note?note.split("|").map(function(t){return '<small>'+esc(t)+'</small>'}).join(""):'')+'</div>'+
         '<div class="stat"><small>평균</small><strong>'+fmt(mean)+'</strong></div>'+
         '<div class="stat"><small>표준편차</small><strong>'+fmt(sd)+'</strong></div>'+
         '<div class="stat"><small>최고 / 최저</small><strong>'+fmt(sc[0])+' / '+fmt(sc[n-1])+'</strong></div>';
@@ -540,7 +540,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
         var n=num(tb[i][c]),t=txt(tb[i][c]),cl=num(tb[h][c]),no=num(tb[i][k]);
         if(n!==null)entries.push({c:cl,n:no,v:Number(n.toFixed(2))});
         else if(t){
-          if(/자퇴|전출|퇴학/.test(t))dropped.push({c:cl,n:no});                 // 자퇴·전출: 계산에서 제외
+          if(/자퇴|전출|전학|퇴학|제적|휴학|유예/.test(t))dropped.push({c:cl,n:no});                 // 자퇴·전출: 계산에서 제외
           else{                                                             // 재적이 있으면 0점으로 포함 (미인정결, "(0.00)" 같은 표시 등)
             var pm=t.match(/^\(\s*(-?\d+(?:\.\d+)?)\s*\)$/);
             entries.push({c:cl,n:no,v:pm?Number(Number(pm[1]).toFixed(2)):0,z:true});zeros++;
@@ -572,8 +572,8 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   function noteOf(z,d){
     var a=[];
     if(z)a.push("미인정결 등 "+z+"명 0점 포함");
-    if(d)a.push("자퇴·전출·퇴학 "+d+"명 제외");
-    return a.join(" · ");
+    if(d)a.push("자퇴·전출·퇴학 등 "+d+"명 제외");
+    return a.join("|");
   }
   function dropTarget(el,onFile){
     ["dragenter","dragover"].forEach(function(t){el.addEventListener(t,function(e){e.preventDefault();el.classList.add("over")})});
