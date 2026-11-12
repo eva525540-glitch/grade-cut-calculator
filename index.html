@@ -504,7 +504,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
           ?'<div class="gcut none"><b>해당 없음</b><span>0명</span></div>'
           :'<div class="gcut"><b>'+r.main+'</b><span>'+r.sub+'</span></div>';
         return '<div class="grow"><div class="gno">'+r.g+'</div>'+cutHtml+
-          '<div class="ginfo"><b>'+r.n+'명</b><span>누적 '+fmt(r.c)+'%</span><span>경계 순위 '+r.k+'위'+(r.adj!==null?' (동점으로 '+r.adj+'위까지)':'')+'</span></div></div>';
+          '<div class="ginfo"><b>'+r.n+'명</b><span>누적 '+fmt(r.c)+'%</span><span>경계 순위 '+r.k+'위'+(r.adj!==null?'<br>(동점으로 '+r.adj+'위까지)':'')+'</span></div></div>';
       }).join("");
       var mean=sc.reduce(function(a,b){return a+b},0)/n;
       var sd=Math.sqrt(sc.reduce(function(a,b){return a+(b-mean)*(b-mean)},0)/n);
