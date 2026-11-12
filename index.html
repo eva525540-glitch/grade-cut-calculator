@@ -958,7 +958,18 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       // 제목
       T(d.title,P,y+(cut?46:42),F(700,cut?46:42),INK);y+=(cut?46:42)+16;
       if(d.sub){T(d.sub,P,y+24,F(400,24),MUTED);y+=24+12}
-      if(d.ratios&&d.ratios.length){T("반영 비율 : "+d.ratios.join(" · "),P,y+22,F(400,22),MUTED);y+=22+12}
+      if(d.ratios&&d.ratios.length){
+        // 항목마다 한 줄, 둘째 줄부터는 첫 항목의 시작 위치에 맞춘다. 너무 길면 …으로 줄인다
+        var lab="반영비율 : ",lf=F(400,22),lw=TW(lab,lf),maxw=W-2*P-lw;
+        d.ratios.forEach(function(rt,i){
+          var s=rt;
+          while(s.length>1&&TW(s,lf)>maxw)s=s.slice(0,-1);
+          if(s!==rt)s=s.slice(0,-1)+"…";
+          if(i===0)T(lab,P,y+22,lf,MUTED);
+          T(s,P+lw,y+22,lf,MUTED);y+=22+8;
+        });
+        y+=4;
+      }
       R(P,y+6,W-2*P,6,INK);y+=6+26;
 
       // 등급컷
@@ -1120,20 +1131,20 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   }
   function saveImage(d){
     withFonts(d,function(){
-      renderReport(d,"cut",mkCanvas).toBlob(function(b){download(b,"등급컷_"+safeName(d.title)+".png")},"image/png");
+      renderReport(d,"cut",mkCanvas).toBlob(function(b){download(b,"등급컷_"+d.kind+"_"+safeName(d.title)+".png")},"image/png");
     });
   }
   function savePdf(d){
     withFonts(d,function(){
       var u=makePdf(renderReport(d,"full",mkCanvas));
-      download(new Blob([u],{type:"application/pdf"}),"분석결과_"+safeName(d.title)+".pdf");
+      download(new Blob([u],{type:"application/pdf"}),"분석결과_"+d.kind+"_"+safeName(d.title)+".pdf");
     });
   }
   function regData(){
     var L=reg.getLast(),m=regMeta||{};
     if(!L)return null;
     var sub=[m.year,m.term,m.grade].filter(Boolean).join(" ");
-    return {title:m.subject||"정기시험",sub:sub+(m.exam?(sub?" · ":"")+m.exam:""),ratios:[],rows:L.rows,stats:L.stats,note:L.note,groups:L.groups,hist:L.hist,ach:null,dateText:dateText()};
+    return {kind:"정기시험",title:m.subject||"정기시험",sub:sub+(m.exam?(sub?" · ":"")+m.exam:""),ratios:[],rows:L.rows,stats:L.stats,note:L.note,groups:L.groups,hist:L.hist,ach:null,dateText:dateText()};
   }
   function sumData(){
     var L=sumEng.getLast(),list=items(),mt=null;
@@ -1141,7 +1152,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     for(var i=0;i<list.length;i++){if(list[i].parsed.meta.subject){mt=list[i].parsed.meta;break}}
     var sub=mt?[mt.year,mt.term,mt.grade].filter(Boolean).join(" "):"";
     var A=achCompute();
-    return {title:(mt&&mt.subject)||"종합점수",sub:sub+(sub?" · ":"")+"종합점수",
+    return {kind:"종합점수",title:(mt&&mt.subject)||"종합점수",sub:sub+(sub?" · ":"")+"종합점수",
       ratios:list.map(function(a){return a.name+" "+fmt(a.ratio)+"%"}),
       rows:L.rows,stats:L.stats,note:L.note,groups:L.groups,hist:L.hist,
       ach:A.rows.length?{label:(ach.mode==="fixed"?"고정분할 ":"추정분할 ")+(ach.lv===6?"A~E · 미도달":"A · B · C"),rows:A.rows,note:ach.lv===6?"I(미도달)은 공통과목에만 적용됩니다.":""}:null,
