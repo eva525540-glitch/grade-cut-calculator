@@ -111,7 +111,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .arow.perf{grid-template-columns:minmax(0,1fr) 78px 84px}
 .arow.cap{font-size:.78rem;color:var(--muted);font-weight:400}
 .fl{font-size:.78rem;color:var(--muted);font-weight:400}
-.mini{width:auto;padding:2px 6px;font-size:.85rem;font-weight:400;margin-left:6px}
+.mini{appearance:none;-webkit-appearance:none;width:auto;margin-left:8px;padding:1px 26px 1px 12px;border:2px solid var(--line);border-radius:999px;font:inherit;font-size:.78rem;font-weight:700;color:var(--fg);cursor:pointer;background:var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23333' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 10px center}
 .grp{display:flex;align-items:center}
 .items{display:flex;flex-direction:column;gap:8px}
 .grp{font-size:.8rem;font-weight:700;color:var(--muted);padding-top:4px;border-bottom:2px solid var(--line)}
@@ -133,6 +133,17 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .ast b{color:var(--fg)}
 .afull{display:flex;align-items:center;gap:8px;font-size:.85rem}
 .afull input{width:84px;padding:4px 8px;text-align:right}
+.setup{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media(max-width:820px){.setup{grid-template-columns:minmax(0,1fr)}}
+.files{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.files .grp{grid-column:1 / -1}
+.runbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:20px;padding-top:14px;border-top:6px solid var(--line)}
+.run{font:inherit;font-weight:700;font-size:1.05rem;background:var(--fg);color:#fff;border:0;padding:12px 44px;cursor:pointer}
+.run:disabled{background:var(--bar);color:var(--muted);cursor:not-allowed}
+.back{font:inherit;font-weight:700;background:var(--panel);color:var(--fg);border:2px solid var(--line);padding:9px 12px;cursor:pointer;text-align:left}
+.sumsum{background:var(--panel);padding:10px 14px;display:flex;flex-direction:column;gap:3px;font-size:.88rem}
+.sumline{display:flex;justify-content:space-between;gap:8px}
+.sumline span{color:var(--muted)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -271,29 +282,43 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     lay.querySelectorAll("[aria-controls]").forEach(function(l){l.setAttribute("aria-controls","s-"+l.getAttribute("aria-controls"))});
     lay.querySelectorAll("[aria-labelledby]").forEach(function(l){l.setAttribute("aria-labelledby","s-"+l.getAttribute("aria-labelledby"))});
     lay.querySelectorAll('input[name="round"]').forEach(function(i){i.name="s-round"});
-    lay.querySelector(".side h2").textContent="영역과 기준";
+    lay.querySelector(".side h2").textContent="등급 기준";
     var box=lay.querySelector(".regbox");
-    var sum=document.createElement("div");
-    sum.className="sumbox";
-    sum.innerHTML=
-      '<div class="step">'+
-        '<div class="sh"><span class="sn">1</span>반영비율</div>'+
-        '<p class="note">평가계획서의 비율(%)을 입력하세요.<br>합계는 100%여야 합니다.<br>정기시험은 100점 만점, 수행평가는 만점을 입력합니다.</p>'+
-        '<div class="grp">정기시험</div>'+
-        '<div id="examRows" class="items"></div>'+
-        '<div class="grp">수행평가 <select id="perfN" class="mini" aria-label="수행평가 영역 개수">'+
-          '<option value="1">1개</option><option value="2" selected>2개</option><option value="3">3개</option><option value="4">4개</option></select></div>'+
-        '<div id="perfRows" class="items"></div>'+
-        '<div class="note" id="itemSum"></div>'+
-        '<div class="msg" id="itemWarn"></div>'+
+    var back=document.createElement("div");
+    back.className="regbox";
+    back.innerHTML='<button type="button" class="back" id="sumBack">← 반영비율·파일 수정</button>'+
+      '<div class="sumsum" id="sumSummary"></div>'+
+      '<div class="msg" id="sumResWarn"></div>';
+    box.parentNode.replaceChild(back,box);
+
+    var setup=document.createElement("div");
+    setup.id="sumsetup";
+    setup.innerHTML=
+      '<div class="setup">'+
+        '<section>'+
+          '<h2>1. 반영비율</h2>'+
+          '<p class="note">평가계획서의 비율(%)을 입력하세요.<br>합계는 100%여야 합니다.<br>정기시험은 100점 만점, 수행평가는 만점을 입력합니다.</p>'+
+          '<div class="grp">정기시험</div>'+
+          '<div id="examRows" class="items"></div>'+
+          '<div class="grp">수행평가 <select id="perfN" class="mini" aria-label="수행평가 영역 개수">'+
+            '<option value="1">1개</option><option value="2" selected>2개</option><option value="3">3개</option><option value="4">4개</option></select></div>'+
+          '<div id="perfRows" class="items"></div>'+
+          '<div class="note" id="itemSum"></div>'+
+          '<div class="msg" id="itemWarn"></div>'+
+        '</section>'+
+        '<section>'+
+          '<h2>2. 파일 올리기</h2>'+
+          '<p class="note">항목마다 일람표(XLS data)를 끌어다 놓거나 선택하세요.</p>'+
+          '<div id="itemFiles" class="items files"></div>'+
+        '</section>'+
       '</div>'+
-      '<div class="step">'+
-        '<div class="sh"><span class="sn">2</span>파일 올리기</div>'+
-        '<p class="note">항목마다 일람표(XLS data)를 끌어다 놓거나 선택하세요.</p>'+
-        '<div id="itemFiles" class="items"></div>'+
-      '</div>';
-    box.parentNode.replaceChild(sum,box);
-    byId("sumview").appendChild(lay);
+      '<div class="runbar"><span class="note" id="runHint"></span><button type="button" class="run" id="sumRun" disabled>산출</button></div>';
+
+    var res=document.createElement("div");
+    res.id="sumresult";res.hidden=true;
+    res.appendChild(lay);
+    byId("sumview").appendChild(setup);
+    byId("sumview").appendChild(res);
   }
   buildSumView();
 
@@ -568,7 +593,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   dropTarget(byId("drop"),loadReg);
 
   /* ---------- 종합점수 화면 ---------- */
-  var sumEng=Engine("s-","비율과 파일을 모두 넣으면 등급컷이 여기에 나타납니다.");
+  var sumEng=Engine("s-","산출할 수 있는 학생이 없습니다. 파일을 확인해 주세요.");
   function mk(id,name,group,editable){return {id:id,name:name,group:group,editable:editable,ratio:0,full:100,parsed:null,fname:"",err:""}}
   var ex1=mk("e1","1차 정기시험","정기시험",false),ex2=mk("e2","2차 정기시험","정기시험",false);
   var perf=[0,1,2,3].map(function(i){return mk("p"+i,"영역"+(i+1),"수행평가",true)});
@@ -670,42 +695,60 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       renderStatus(a);recomputeSum();
     });
   }
-  // 학생 한 명의 종합점수 = Σ (점수 ÷ 만점 × 반영 비율). 반·번호가 같으면 같은 학생으로 본다.
-  function recomputeSum(){
-    var list=items(),sr=0,ready=true,warns=[];
-    if(!list.length)ready=false;
-    list.forEach(function(a){sr+=a.ratio;if(!a.parsed||!(a.full>0))ready=false});
+  function sumStatus(){
+    var list=items(),sr=0,missing=0,fullOk=true;
+    list.forEach(function(a){sr+=a.ratio;if(!a.parsed)missing++;if(!(a.full>0))fullOk=false});
     var okRatio=Math.abs(sr-100)<0.001;
-    var sumEl=byId("itemSum");
-    sumEl.textContent="비율 합계 "+fmt(sr)+"% / 100%";
-    sumEl.className=okRatio?"note":"msg";
-    var scores=[],classes="",note="",subs=[];
-    list.forEach(function(a){if(a.parsed&&a.parsed.meta.subject&&subs.indexOf(a.parsed.meta.subject)<0)subs.push(a.parsed.meta.subject)});
-    if(subs.length>1)warns.push("파일마다 교과목이 다릅니다. 파일을 확인해 주세요.");
-    if(ready&&okRatio){
-      var dropSet={};
-      list.forEach(function(a){a.parsed.dropped.forEach(function(d){dropSet[d.c+"-"+d.n]=1})});   // 자퇴·전출은 모든 항목에서 제외
-      var maps=list.map(function(a){var m={};a.parsed.entries.forEach(function(e){m[e.c+"-"+e.n]=e});return m});
-      var union={};
-      maps.forEach(function(m){Object.keys(m).forEach(function(key){if(!dropSet[key])union[key]=1})});
-      var total=[],excluded=0,zeroStu=0;
-      Object.keys(union).forEach(function(key){
-        var t=0,all=true,c=null,z=false;
-        maps.forEach(function(m,i){
-          if(!m[key]){all=false;return}
-          c=m[key].c;if(m[key].z)z=true;
-          t+=m[key].v/list[i].full*list[i].ratio;
-        });
-        if(all){total.push({c:c,v:Number(t.toFixed(2))});if(z)zeroStu++}else excluded++;
-      });
-      if(excluded)warns.push("일부 항목에 점수가 없는 학생 "+excluded+"명은 계산에서 제외했습니다.");
-      scores=total.map(function(x){return x.v});
-      classes=classCards(groupByClass(total,[]));
-      note=noteOf(zeroStu,Object.keys(dropSet).length);
-    }
-    byId("itemWarn").textContent=warns.join(" ");
-    sumEng.setData(scores,classes,note,100);
+    return {list:list,sr:sr,okRatio:okRatio,missing:missing,fullOk:fullOk,ready:list.length>0&&okRatio&&missing===0&&fullOk};
   }
+  function subjectWarn(list){
+    var subs=[];
+    list.forEach(function(a){if(a.parsed&&a.parsed.meta.subject&&subs.indexOf(a.parsed.meta.subject)<0)subs.push(a.parsed.meta.subject)});
+    return subs.length>1?"파일마다 교과목이 다릅니다. 파일을 확인해 주세요.":"";
+  }
+  // 설정 화면의 상태 표시와 산출 버튼
+  function recomputeSum(){
+    var s=sumStatus(),el=byId("itemSum");
+    el.textContent="비율 합계 "+fmt(s.sr)+"% / 100%";
+    el.className=s.okRatio?"note":"msg";
+    byId("itemWarn").textContent=subjectWarn(s.list);
+    byId("runHint").textContent=!s.list.length?"항목을 하나 이상 선택하세요."
+      :!s.okRatio?"비율 합계를 100%로 맞춰 주세요."
+      :s.missing?"파일 "+s.missing+"개를 더 올려 주세요."
+      :!s.fullOk?"만점을 입력해 주세요.":"산출할 수 있습니다.";
+    byId("sumRun").disabled=!s.ready;
+  }
+  // 학생 한 명의 종합점수 = Σ (점수 ÷ 만점 × 반영 비율). 반·번호가 같으면 같은 학생으로 본다.
+  function runSum(){
+    var s=sumStatus();
+    if(!s.ready)return;
+    var list=s.list,warns=[],w=subjectWarn(list);
+    if(w)warns.push(w);
+    var dropSet={};
+    list.forEach(function(a){a.parsed.dropped.forEach(function(d){dropSet[d.c+"-"+d.n]=1})});   // 자퇴·전출은 모든 항목에서 제외
+    var maps=list.map(function(a){var m={};a.parsed.entries.forEach(function(e){m[e.c+"-"+e.n]=e});return m});
+    var union={};
+    maps.forEach(function(m){Object.keys(m).forEach(function(key){if(!dropSet[key])union[key]=1})});
+    var total=[],excluded=0,zeroStu=0;
+    Object.keys(union).forEach(function(key){
+      var t=0,all=true,c=null,z=false;
+      maps.forEach(function(m,i){
+        if(!m[key]){all=false;return}
+        c=m[key].c;if(m[key].z)z=true;
+        t+=m[key].v/list[i].full*list[i].ratio;
+      });
+      if(all){total.push({c:c,v:Number(t.toFixed(2))});if(z)zeroStu++}else excluded++;
+    });
+    if(excluded)warns.push("일부 항목에 점수가 없는 학생 "+excluded+"명은 계산에서 제외했습니다.");
+    byId("sumSummary").innerHTML=list.map(function(a){return '<div class="sumline"><span>'+esc(a.name)+'</span><b>'+fmt(a.ratio)+'%</b></div>'}).join("");
+    byId("sumResWarn").textContent=warns.join(" ");
+    sumEng.setData(total.map(function(x){return x.v}),classCards(groupByClass(total,[])),noteOf(zeroStu,Object.keys(dropSet).length),100);
+    byId("sumsetup").hidden=true;
+    byId("sumresult").hidden=false;
+    window.scrollTo(0,0);
+  }
+  byId("sumRun").onclick=runSum;
+  byId("sumBack").onclick=function(){byId("sumresult").hidden=true;byId("sumsetup").hidden=false;window.scrollTo(0,0)};
   byId("perfN").onchange=function(e){perfN=parseInt(e.target.value,10);renderPerfRows();renderFiles();recomputeSum()};
   renderExamRows();
   renderPerfRows();
