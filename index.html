@@ -53,7 +53,7 @@ select,input[type=number]{font:inherit;color:var(--fg);background:var(--panel);b
 .legend{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
 .legend .ic{width:14px;height:28px;color:var(--fg)}
 .grades{display:flex;flex-direction:column;gap:6px}
-.grow{display:grid;grid-template-columns:44px minmax(0,1fr) 170px;align-items:center;gap:12px;background:var(--panel);padding:8px 12px 8px 8px}
+.grow{display:grid;grid-template-columns:44px minmax(0,1fr) 210px;align-items:center;gap:12px;background:var(--panel);padding:8px 12px 8px 8px}
 .gno{background:var(--accent);color:var(--fg);font-weight:900;font-size:1.3rem;height:44px;display:flex;align-items:center;justify-content:center}
 .gicons{display:flex;flex-wrap:wrap;gap:3px;min-height:28px;align-content:center}
 .ic{display:inline-block;width:14px;height:28px;color:var(--fg);flex:none}
@@ -215,9 +215,9 @@ select,input[type=number]{font:inherit;color:var(--fg);background:var(--panel);b
       k=Math.max(0,Math.min(n,k));
       var cut=k>0?sc[k-1]:null;
       if(i===ratios.length-1)cut=sc[n-1];
-      var cnt=0,valid=cut!==null&&cut<prev;
+      var cnt=0,valid=cut!==null&&cut<prev,hi=prev;
       if(valid){sc.forEach(function(x){if(x>=cut&&x<prev)cnt++});prev=cut;cuts.push(cut)}
-      list.push({g:i+1,p:p,c:cum,cut:valid?cut:null,n:cnt});
+      list.push({g:i+1,p:p,c:cum,k:k,cut:valid?cut:null,hi:hi,n:cnt});
     });
     var mx=Math.max.apply(null,list.map(function(r){return r.n}).concat([1]));
     var unit=[1,2,5,10,20,50].filter(function(u){return mx/u<=22})[0]||100;
@@ -225,7 +225,8 @@ select,input[type=number]{font:inherit;color:var(--fg);background:var(--panel);b
       return '<div class="grow"><div class="gno">'+r.g+'</div>'+
         '<div class="gicons">'+icons(r.n,unit)+'</div>'+
         '<div class="ginfo"><b>'+(r.cut===null?'해당 없음':fmt(r.cut)+'점 이상')+'</b>'+
-        '<span>'+r.n+'명 · 비율 '+fmt(r.p)+'% · 누적 '+fmt(r.c)+'%</span></div></div>';
+        (r.cut===null?'':'<span>'+(r.hi===Infinity?'~ '+fmt(sc[0])+'점 (최고점)':'~ '+fmt(r.hi)+'점 미만')+' · '+r.n+'명</span>')+
+        '<span>누적 '+fmt(r.c)+'% · 경계 순위 '+r.k+'위</span></div></div>';
     }).join("");
     $("legend").innerHTML=PERSON+'<span>= '+unit+'명'+(unit>1?' (가까운 값으로 표시, 정확한 인원은 오른쪽 숫자)':'')+'</span>';
     var mean=sc.reduce(function(a,b){return a+b},0)/n;
@@ -278,19 +279,22 @@ select,input[type=number]{font:inherit;color:var(--fg);background:var(--panel);b
   // 일람표 구조: 왼쪽 위 칸이 '반번호', 오른쪽으로 반(1,2,3...), 아래로 번호(1,2,3...), 칸마다 점수.
   // 점수 아래쪽에는 응시인원·합계·평균 줄이 있어 점수 영역에서 제외한다.
   function analyze(){
-    var st=$("fstat"),h=-1,i,c;
+    var st=$("fstat"),h=-1,k=0,i,c;
+    // '반번호' 칸은 A열이 아니어도 되고, 그 오른쪽에 반 번호(숫자)가 하나 이상 있으면 머리글 줄로 본다.
     for(i=0;i<Math.min(table.length,40)&&h<0;i++){
-      var a=txt(table[i][0]).replace(/\s/g,"");
-      if(/반/.test(a)&&/번호/.test(a)&&num(table[i][1])!==null)h=i;
+      for(c=0;c<table[i].length&&h<0;c++){
+        var a=txt(table[i][c]).replace(/\s/g,"");
+        if(/반/.test(a)&&/번호/.test(a)&&table[i].slice(c+1).some(function(v){return num(v)!==null})){h=i;k=c}
+      }
     }
     if(h<0){st.textContent="'반번호' 머리글을 찾지 못했습니다. 교과목별 일람표 파일이 맞는지 확인해 주세요.";return}
     var cls=[];
-    for(c=1;c<table[h].length;c++)if(num(table[h][c])!==null)cls.push(c);
+    for(c=k+1;c<table[h].length;c++)if(num(table[h][c])!==null)cls.push(c);
     scores=[];var per={},absent=0,end=table.length;
     cls.forEach(function(c){per[c]=[]});
     for(i=h+1;i<table.length;i++){
-      if(num(table[i][0])===null){
-        if(txt(table[i][0])){end=i;break}
+      if(num(table[i][k])===null){
+        if(txt(table[i][k])){end=i;break}
         continue;
       }
       cls.forEach(function(c){
@@ -301,7 +305,7 @@ select,input[type=number]{font:inherit;color:var(--fg);background:var(--panel);b
     }
     var fileN=null;
     for(i=end;i<table.length;i++){
-      if(/응시/.test(txt(table[i][0]))){
+      if(/응시/.test(txt(table[i][k]))){
         fileN=0;cls.forEach(function(c){var m=parseInt(txt(table[i][c]),10);if(!isNaN(m))fileN+=m});
         break;
       }
