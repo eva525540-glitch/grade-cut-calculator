@@ -191,6 +191,9 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .fcard .x:hover{color:var(--fg)}
 .drop .dh{align-self:center;text-align:center;font-size:.75rem;color:#8c8c8c;margin-top:-2px}
 .drop .dn{font-size:.78rem;color:#9a9a9a;margin-top:-4px}
+
+.arow input[type=text],.arow input[type=number]{height:34px;padding-top:0;padding-bottom:0;box-sizing:border-box}
+.arow input.need{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,140,0,.35)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -352,10 +355,10 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
             '<input type="file" id="bulkFile" multiple accept=".xls,.xlsx,.csv,.html,.htm"></label>'+
           '<div class="note" id="bulkMsg" aria-live="polite"></div>'+
           '<div id="fileList" class="flist"></div>'+
-          '<div id="sumMetaS"></div>'+
         '</section>'+
         '<section>'+
           '<h2>2. 반영비율</h2>'+
+          '<div id="sumMetaS"></div>'+
           '<p class="note">평가계획서의 비율(%)을 입력하세요. 합계는 100%여야 합니다.</p>'+
           '<div id="itemRows" class="items"></div>'+
           '<div class="note" id="itemSum"></div>'+
@@ -813,6 +816,11 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     byId("runHint").textContent=!s.list.length?"파일을 올려 주세요."
       :!s.okRatio?"비율 합계를 100%로 맞춰 주세요.":"산출할 수 있습니다.";
     byId("sumRun").disabled=!s.ready;
+    s.list.forEach(function(a){var el=byId("ar-"+a.id);if(el)el.classList.remove("need")});
+    if(!s.ready&&s.list.length){
+      var empty=s.list.filter(function(a){return !(a.ratio>0)});
+      (empty.length?empty:s.list).forEach(function(a){var el=byId("ar-"+a.id);if(el)el.classList.add("need")});   // 비어 있는 비율, 모두 채웠는데 합계가 다르면 전체
+    }
   }
   // 학생 한 명의 종합점수 = Σ (점수 ÷ 만점 × 반영 비율). 반·번호가 같으면 같은 학생으로 본다.
   function runSum(){
