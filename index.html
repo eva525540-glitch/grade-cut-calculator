@@ -109,6 +109,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .chk{display:flex;align-items:center;gap:8px;font-size:.95rem;color:var(--fg);cursor:pointer}
 .chk input{width:18px;height:18px;margin:0;accent-color:var(--fg)}
 .arow.perf{grid-template-columns:minmax(0,1fr) 84px 84px}
+.arow input[type=text],.arow input[type=number]{padding-top:5px;padding-bottom:5px}
 #sumsetup h2::before{display:none}
 .arow.cap{font-size:.78rem;color:var(--muted);font-weight:400}
 .fl{font-size:.78rem;color:var(--muted);font-weight:400}
@@ -628,14 +629,14 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   function renderExamRows(){
     var box=byId("examRows");box.innerHTML="";
     var cap=document.createElement("div");cap.className="arow perf cap";
-    cap.innerHTML='<span></span><span>만점</span><span>비율</span>';
+    cap.innerHTML='<span></span><span>비율</span><span>만점</span>';
     box.appendChild(cap);
     [ex1,ex2].forEach(function(a){
       var on=a===ex1?has1:has2;
       var d=document.createElement("div");d.className="arow perf";
       d.innerHTML='<label class="chk"><input type="checkbox" id="ck-'+a.id+'"'+(on?' checked':'')+'> '+esc(a.name)+'</label>'+
-        '<div class="pct"><input type="number" id="fu-'+a.id+'" aria-label="'+esc(a.name)+' 만점" min="0" step="any" placeholder="100" value="'+a.full+'"'+(on?'':' disabled')+'><span>점</span></div>'+
-        pctHtml(a,on);
+        pctHtml(a,on)+
+        '<div class="pct"><input type="number" id="fu-'+a.id+'" aria-label="'+esc(a.name)+' 만점" min="0" step="any" placeholder="100" value="'+a.full+'"'+(on?'':' disabled')+'><span>점</span></div>';
       box.appendChild(d);
       bindRatio(d,a);
       d.querySelector("#fu-"+a.id).addEventListener("input",function(e){a.full=parseFloat(e.target.value)||0;recomputeSum()});
@@ -651,13 +652,13 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     var box=byId("perfRows");box.innerHTML="";
     if(perfN>0){
       var cap=document.createElement("div");cap.className="arow perf cap";
-      cap.innerHTML='<span>영역명</span><span>만점</span><span>비율</span>';
+      cap.innerHTML='<span>영역명</span><span>비율</span><span>만점</span>';
       box.appendChild(cap);
     }
     for(var i=0;i<perfN;i++)(function(a,i){
       var d=document.createElement("div");d.className="arow perf";
       d.innerHTML='<input type="text" id="an-'+a.id+'" aria-label="수행평가 영역 '+(i+1)+' 영역명" maxlength="20" value="'+esc(a.name)+'">'+
-        '<div class="pct"><input type="number" id="fu-'+a.id+'" aria-label="'+esc(a.name)+' 만점" min="0" step="any" value="'+(a.full||"")+'"><span>점</span></div>'+pctHtml(a,true);
+        pctHtml(a,true)+'<div class="pct"><input type="number" id="fu-'+a.id+'" aria-label="'+esc(a.name)+' 만점" min="0" step="any" value="'+(a.full||"")+'"><span>점</span></div>';
       box.appendChild(d);
       bindRatio(d,a);
       d.querySelector("#fu-"+a.id).addEventListener("input",function(e){a.full=parseFloat(e.target.value)||0;recomputeSum()});
@@ -718,7 +719,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   }
   function sumStatus(){
     var list=items(),sr=0,missing=0,fullOk=true;
-    list.forEach(function(a){sr+=a.ratio;if(!a.parsed)missing++;if(!(a.full>0))fullOk=false});
+    list.forEach(function(a){sr+=a.ratio;if(!a.parsed)missing++});
     var okRatio=Math.abs(sr-100)<0.001;
     return {list:list,sr:sr,okRatio:okRatio,missing:missing,fullOk:fullOk,ready:list.length>0&&okRatio&&missing===0&&fullOk};
   }
@@ -756,7 +757,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       maps.forEach(function(m,i){
         if(!m[key]){all=false;return}
         c=m[key].c;if(m[key].z)z=true;
-        t+=m[key].v/list[i].full*list[i].ratio;
+        t+=m[key].v/(list[i].full>0?list[i].full:list[i].ratio)*list[i].ratio;   // 만점이 비어 있으면 점수가 그대로 반영 점수
       });
       if(all){total.push({c:c,v:Number(t.toFixed(2))});if(z)zeroStu++}else excluded++;
     });
