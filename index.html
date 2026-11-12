@@ -108,6 +108,8 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .sn{width:22px;height:22px;background:var(--fg);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex:none}
 .chk{display:flex;align-items:center;gap:8px;font-size:.95rem;color:var(--fg);cursor:pointer}
 .chk input{width:18px;height:18px;margin:0;accent-color:var(--fg)}
+.mini{width:auto;padding:2px 6px;font-size:.85rem;font-weight:400;margin-left:6px}
+.grp{display:flex;align-items:center}
 .items{display:flex;flex-direction:column;gap:8px}
 .grp{font-size:.8rem;font-weight:700;color:var(--muted);padding-top:4px;border-bottom:2px solid var(--line)}
 .arow{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;align-items:center}
@@ -268,22 +270,19 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     sum.className="sumbox";
     sum.innerHTML=
       '<div class="step">'+
-        '<div class="sh"><span class="sn">1</span>구성 선택</div>'+
-        '<label class="chk"><input type="checkbox" id="has1" checked> 1차 정기시험 있음</label>'+
-        '<p class="note">2차 정기시험은 항상 포함됩니다.</p>'+
-        '<div class="field"><label for="perfN">수행평가 영역 개수 (최대 4개)</label>'+
-        '<select id="perfN"><option value="1">1개</option><option value="2" selected>2개</option><option value="3">3개</option><option value="4">4개</option></select></div>'+
-      '</div>'+
-      '<div class="step">'+
-        '<div class="sh"><span class="sn">2</span>반영 비율</div>'+
+        '<div class="sh"><span class="sn">1</span>구성과 반영 비율</div>'+
         '<p class="note">평가계획서의 비율(%)을 입력하세요. 합계는 100%여야 합니다.</p>'+
-        '<div id="itemRatios" class="items"></div>'+
+        '<div class="grp">정기시험</div>'+
+        '<div id="examRows" class="items"></div>'+
+        '<div class="grp">수행평가 <select id="perfN" class="mini" aria-label="수행평가 영역 개수">'+
+          '<option value="1">1개</option><option value="2" selected>2개</option><option value="3">3개</option><option value="4">4개</option></select></div>'+
+        '<div id="perfRows" class="items"></div>'+
         '<div class="note" id="itemSum"></div>'+
         '<div class="msg" id="itemWarn"></div>'+
       '</div>'+
       '<div class="step">'+
-        '<div class="sh"><span class="sn">3</span>파일 올리기</div>'+
-        '<p class="note">정기시험 차시마다, 수행평가 영역마다 일람표(XLS data)를 끌어다 놓거나 선택하세요.</p>'+
+        '<div class="sh"><span class="sn">2</span>파일 올리기</div>'+
+        '<p class="note">항목마다 일람표(XLS data)를 끌어다 놓거나 선택하세요.</p>'+
         '<div id="itemFiles" class="items"></div>'+
       '</div>';
     box.parentNode.replaceChild(sum,box);
@@ -549,40 +548,61 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   function mk(id,name,group,editable){return {id:id,name:name,group:group,editable:editable,ratio:0,full:100,parsed:null,fname:"",err:""}}
   var ex1=mk("e1","1차 정기시험","정기시험",false),ex2=mk("e2","2차 정기시험","정기시험",false);
   var perf=[0,1,2,3].map(function(i){return mk("p"+i,"영역"+(i+1),"수행평가",true)});
-  var has1=true,perfN=2;
+  var has1=true,has2=true,perfN=2;
   function items(){
     var a=[];
     if(has1)a.push(ex1);
-    a.push(ex2);
+    if(has2)a.push(ex2);
     for(var i=0;i<perfN;i++)a.push(perf[i]);
     return a;
   }
   function ratioText(a){return a.ratio?fmt(a.ratio)+"%":"비율 미입력"}
-  function renderItems(){
-    var rb=byId("itemRatios"),fb=byId("itemFiles"),last="";
-    rb.innerHTML="";fb.innerHTML="";
+  function pctHtml(a,on){
+    return '<div class="pct"><input type="number" id="ar-'+a.id+'" aria-label="'+esc(a.name)+' 반영 비율(%)" min="0" max="100" step="0.1" placeholder="0" value="'+(a.ratio||"")+'"'+(on?'':' disabled')+'><span>%</span></div>';
+  }
+  function bindRatio(d,a){
+    d.querySelector("#ar-"+a.id).addEventListener("input",function(e){
+      a.ratio=parseFloat(e.target.value)||0;
+      var t=byId("hr-"+a.id);if(t)t.textContent=ratioText(a);
+      recomputeSum();
+    });
+  }
+  function renderExamRows(){
+    var box=byId("examRows");box.innerHTML="";
+    [ex1,ex2].forEach(function(a){
+      var on=a===ex1?has1:has2;
+      var d=document.createElement("div");d.className="arow";
+      d.innerHTML='<label class="chk"><input type="checkbox" id="ck-'+a.id+'"'+(on?' checked':'')+'> '+esc(a.name)+'</label>'+pctHtml(a,on);
+      box.appendChild(d);
+      bindRatio(d,a);
+      d.querySelector("#ck-"+a.id).addEventListener("change",function(e){
+        if(a===ex1)has1=e.target.checked;else has2=e.target.checked;
+        byId("ar-"+a.id).disabled=!e.target.checked;
+        renderFiles();recomputeSum();
+      });
+    });
+  }
+  function renderPerfRows(){
+    var box=byId("perfRows");box.innerHTML="";
+    for(var i=0;i<perfN;i++)(function(a,i){
+      var d=document.createElement("div");d.className="arow";
+      d.innerHTML='<input type="text" id="an-'+a.id+'" aria-label="수행평가 영역 '+(i+1)+' 이름" maxlength="20" value="'+esc(a.name)+'">'+pctHtml(a,true);
+      box.appendChild(d);
+      bindRatio(d,a);
+      d.querySelector("#an-"+a.id).addEventListener("input",function(e){
+        a.name=e.target.value.trim()||("영역"+(i+1));
+        var t=byId("hn-"+a.id);if(t)t.textContent=a.name;
+      });
+    })(perf[i],i);
+  }
+  function renderFiles(){
+    var fb=byId("itemFiles"),last="";
+    fb.innerHTML="";
     items().forEach(function(a){
       if(a.group!==last){
         last=a.group;
-        [rb,fb].forEach(function(box){var g=document.createElement("div");g.className="grp";g.textContent=a.group;box.appendChild(g)});
+        var g=document.createElement("div");g.className="grp";g.textContent=a.group;fb.appendChild(g);
       }
-      // 반영 비율 줄
-      var d=document.createElement("div");d.className="arow";
-      d.innerHTML=(a.editable
-        ?'<input type="text" id="an-'+a.id+'" aria-label="'+esc(a.group)+' 영역 이름" maxlength="20" value="'+esc(a.name)+'">'
-        :'<span class="aname">'+esc(a.name)+'</span>')+
-        '<div class="pct"><input type="number" id="ar-'+a.id+'" aria-label="'+esc(a.name)+' 반영 비율(%)" min="0" max="100" step="0.1" placeholder="0" value="'+(a.ratio||"")+'"><span>%</span></div>';
-      rb.appendChild(d);
-      if(a.editable)d.querySelector("#an-"+a.id).addEventListener("input",function(e){
-        a.name=e.target.value.trim()||("영역"+(a.id.slice(1)*1+1));
-        byId("hn-"+a.id).textContent=a.name;
-      });
-      d.querySelector("#ar-"+a.id).addEventListener("input",function(e){
-        a.ratio=parseFloat(e.target.value)||0;
-        byId("hr-"+a.id).textContent=ratioText(a);
-        recomputeSum();
-      });
-      // 파일 칸
       var f=document.createElement("div");f.className="afile";
       f.innerHTML='<div class="ah"><b id="hn-'+a.id+'">'+esc(a.name)+'</b><span id="hr-'+a.id+'">'+ratioText(a)+'</span></div>'+
         '<label class="abtn"><span id="bl-'+a.id+'">파일 선택</span><input type="file" id="fi-'+a.id+'" accept=".xls,.xlsx,.csv,.html,.htm"></label>'+
@@ -626,6 +646,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   // 학생 한 명의 종합점수 = Σ (점수 ÷ 만점 × 반영 비율). 반·번호가 같으면 같은 학생으로 본다.
   function recomputeSum(){
     var list=items(),sr=0,ready=true,warns=[];
+    if(!list.length)ready=false;
     list.forEach(function(a){sr+=a.ratio;if(!a.parsed||!(a.full>0))ready=false});
     var okRatio=Math.abs(sr-100)<0.001;
     var sumEl=byId("itemSum");
@@ -655,9 +676,10 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     byId("itemWarn").textContent=warns.join(" ");
     sumEng.setData(scores,classes);
   }
-  byId("has1").onchange=function(e){has1=e.target.checked;renderItems();recomputeSum()};
-  byId("perfN").onchange=function(e){perfN=parseInt(e.target.value,10);renderItems();recomputeSum()};
-  renderItems();
+  byId("perfN").onchange=function(e){perfN=parseInt(e.target.value,10);renderPerfRows();renderFiles();recomputeSum()};
+  renderExamRows();
+  renderPerfRows();
+  renderFiles();
   recomputeSum();
 
   /* ---------- 화면 전환 ---------- */
