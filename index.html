@@ -513,7 +513,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
         '<div class="stat"><small>평균</small><strong>'+fmt(mean)+'</strong></div>'+
         '<div class="stat"><small>표준편차</small><strong>'+fmt(sd)+'</strong></div>'+
         '<div class="stat"><small>최고 / 최저</small><strong>'+fmt(sc[0])+' / '+fmt(sc[n-1])+'</strong></div>';
-      last={rows:list.map(function(r){return {g:r.g,main:r.main,sub:r.sub,n:r.n,none:r.none}}),
+      last={rows:list.map(function(r){return {g:r.g,main:r.main,sub:r.sub,n:r.n,none:r.none,p:mode==="cnt"?(counts[r.g-1]||0)/n*100:ratios[r.g-1]}}),
         stats:{n:n,mean:fmt(mean),sd:fmt(sd),max:fmt(sc[0]),min:fmt(sc[n-1]),full:full}};
       drawHist(sc,cuts);
     }
@@ -993,7 +993,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
         }
         var rx=W-P-22;
         T(r.n+"명",rx,y+(cut?40:30),F(700,cut?34:28),INK,"right");
-        if(total)T((r.n/total*100).toFixed(1)+"%",rx,y+(cut?68:52),F(400,cut?20:17),MUTED,"right");
+        if(r.p!=null)T((Math.round(r.p*10)/10)+"%",rx,y+(cut?68:52),F(400,cut?20:17),MUTED,"right");     // 실제 비율이 아니라 정한 등급 비율
         y+=rowH;
       });
       y+=cut?6:10;
