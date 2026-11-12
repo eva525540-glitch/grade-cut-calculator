@@ -436,6 +436,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     function calc(){
       var sc=scores.slice().sort(function(a,b){return b-a});
       var n=sc.length,msg=$("msg"),out=$("out"),G=ratios.length;
+      $("hist").closest("section").hidden=!n;      // 점수 분포는 산출된 뒤에 반별 현황과 함께 나타난다
       var sum=ratios.reduce(function(a,b){return a+b},0);
       var mt="";
       if(mode==="cnt"){
