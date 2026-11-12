@@ -194,6 +194,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 
 .arow input[type=text],.arow input[type=number]{height:34px;padding-top:0;padding-bottom:0;box-sizing:border-box}
 .arow input.need{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,140,0,.35)}
+.side{display:flex;flex-direction:column;gap:20px}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -241,10 +242,13 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
         </label>
         <div class="note" id="fstat" aria-live="polite"></div>
         <div id="meta"></div>
+        </div>
+      </section>
+      <section id="gradeSide">
+        <h2>등급 기준</h2>
         <div class="field">
           <label for="full">만점</label>
           <input id="full" type="number" min="1" step="any" value="100">
-        </div>
         </div>
         <fieldset class="field" id="preset">
           <legend>등급제</legend>
@@ -325,6 +329,11 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   function buildSumView(){
     var lay=document.querySelector("#regview .layout").cloneNode(true);
     lay.querySelectorAll("[id]").forEach(function(el){el.id="s-"+el.id});
+    var gs=lay.querySelector("#s-gradeSide"),first=gs.previousElementSibling;   // 정기시험에만 있는 '등급 기준' 구역을 첫 구역에 합친다
+    gs.querySelector("h2").remove();
+    gs.querySelector("#s-full").closest(".field").remove();
+    while(gs.firstChild)first.appendChild(gs.firstChild);
+    gs.remove();
     lay.querySelectorAll("label[for]").forEach(function(l){l.setAttribute("for","s-"+l.getAttribute("for"))});
     lay.querySelectorAll("[aria-controls]").forEach(function(l){l.setAttribute("aria-controls","s-"+l.getAttribute("aria-controls"))});
     lay.querySelectorAll("[aria-labelledby]").forEach(function(l){l.setAttribute("aria-labelledby","s-"+l.getAttribute("aria-labelledby"))});
