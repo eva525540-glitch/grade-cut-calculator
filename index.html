@@ -195,6 +195,11 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .arow input[type=text],.arow input[type=number]{height:34px;padding-top:0;padding-bottom:0;box-sizing:border-box}
 .arow input.need{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,140,0,.35)}
 .side{display:flex;flex-direction:column;gap:20px}
+.sechead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.imgbtn{font:inherit;font-size:.75rem;font-weight:700;background:var(--panel);color:var(--fg);border:2px solid var(--line);padding:3px 10px;cursor:pointer;box-shadow:var(--shadow)}
+.imgbtn:hover,.pdfbtn:hover{border-color:var(--accent);outline:2px solid var(--accent)}
+.exportbar{display:flex;justify-content:flex-end}
+.pdfbtn{font:inherit;font-weight:700;background:var(--fg);color:#fff;border:2px solid var(--fg);padding:9px 22px;cursor:pointer;box-shadow:var(--shadow)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -284,7 +289,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 
     <div class="content">
       <section>
-        <h2>등급컷</h2>
+        <div class="sechead"><h2>등급컷</h2><button type="button" class="imgbtn" id="imgBtn" hidden>이미지로 저장</button></div>
         <div class="stats" id="stats"></div>
         <div class="grades" id="out"></div>
         
@@ -304,6 +309,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
           <p class="note">5점 단위로 나눈 점수 분포이며, 검은 막대는 등급컷이 속한 구간입니다.</p>
         </section>
       </div>
+      <div class="exportbar" id="exp" hidden><button type="button" class="pdfbtn" id="pdfBtn">PDF로 저장</button></div>
     </div>
   </div>
   </div>
@@ -412,7 +418,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   function Engine(P,placeholder){
     var $=function(id){return document.getElementById(P+id)};
     var ratios=PRESETS["5"].slice(),scores=[];
-    var mode="pct",counts=[],rmode="round",full=100,note="";
+    var mode="pct",counts=[],rmode="round",full=100,note="",last=null,groups=[],histData=null;
 
     function renderRatios(){
       var box=$("ratios");box.innerHTML="";
@@ -464,6 +470,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       var sc=scores.slice().sort(function(a,b){return b-a});
       var n=sc.length,msg=$("msg"),out=$("out"),G=ratios.length;
       $("hist").closest("section").hidden=!n;      // 점수 분포는 산출된 뒤에 반별 현황과 함께 나타난다
+      var xb=$("exp"),ib=$("imgBtn");if(xb)xb.hidden=!n;if(ib)ib.hidden=!n;     // 저장 버튼도 산출 뒤에만
       var sum=ratios.reduce(function(a,b){return a+b},0);
       var mt="";
       if(mode==="cnt"){
@@ -476,7 +483,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       msg.textContent=mt;
       if(!n){
         out.innerHTML='<div class="placeholder">'+placeholder+'</div>';
-        $("stats").innerHTML="";drawHist([],[]);return;
+        $("stats").innerHTML="";last=null;drawHist([],[]);return;
       }
       var ks=mode==="cnt"?ksFromCnt(n):ksFromPct(n),cum=0,list=[],cuts=[],prevM=0,prevCut=Infinity;
       ks.forEach(function(k,i){
@@ -506,6 +513,8 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
         '<div class="stat"><small>평균</small><strong>'+fmt(mean)+'</strong></div>'+
         '<div class="stat"><small>표준편차</small><strong>'+fmt(sd)+'</strong></div>'+
         '<div class="stat"><small>최고 / 최저</small><strong>'+fmt(sc[0])+' / '+fmt(sc[n-1])+'</strong></div>';
+      last={rows:list.map(function(r){return {g:r.g,main:r.main,sub:r.sub,n:r.n,none:r.none}}),
+        stats:{n:n,mean:fmt(mean),sd:fmt(sd),max:fmt(sc[0]),min:fmt(sc[n-1]),full:full}};
       drawHist(sc,cuts);
     }
     function drawHist(sc,cuts){
@@ -515,6 +524,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       var bins=new Array(21).fill(0);
       sc.forEach(function(x){bins[Math.min(20,Math.max(0,Math.floor(x/step)))]++});
       var mx=Math.max.apply(null,bins.concat([1]));
+      histData={top:top,bins:bins,cutBins:cuts.map(function(t){return Math.min(20,Math.floor(t/step))})};
       $("hist").innerHTML=bins.map(function(c,i){
         var isCut=cuts.some(function(t){return Math.min(20,Math.floor(t/step))===i});
         return '<i class="'+(isCut?'hi':'')+'" style="height:'+Math.max(c?3:0,c/mx*100)+'%" title="'+fmt(i*step)+'점대 '+c+'명"></i>';
@@ -522,8 +532,8 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     }
     // 점수 목록과 반별 현황을 새로 넣고 다시 계산한다.
     function setFull(v){full=v>0?v:100;calc()}
-    function setData(sc,classesHtml,nt,fl){
-      scores=sc;note=nt||"";if(fl>0)full=fl;
+    function setData(sc,classesHtml,nt,fl,grp){
+      scores=sc;note=nt||"";groups=grp||[];if(fl>0)full=fl;
       $("classes").innerHTML=classesHtml;
       $("classcard").hidden=!classesHtml;
       deriveCounts();
@@ -539,7 +549,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     renderRatios();
     deriveCounts();
     calc();
-    return {setData:setData,setFull:setFull,getScores:function(){return scores.slice()}};
+    return {setData:setData,setFull:setFull,getScores:function(){return scores.slice()},getLast:function(){return last?{rows:last.rows,stats:last.stats,groups:groups,hist:histData,note:note}:null}};
   }
 
   /* ---------- 일람표 파일 읽기 ---------- */
@@ -651,6 +661,12 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     if(!keys.length)keys=Object.keys(by).map(Number).sort(function(a,b){return a-b});
     return keys.map(function(c){return {c:c,list:by[c]||[]}});
   }
+  function gstats(groups){
+    return groups.map(function(g){
+      var a=g.list,m=a.length?a.reduce(function(x,y){return x+y},0)/a.length:0;
+      return {c:g.c,n:a.length,mean:a.length?(Math.round(m*10)/10).toFixed(1):"-"};
+    });
+  }
   function noteOf(z,d){
     var a=[];
     if(z)a.push("미인정결 등 "+z+"명 0점 포함");
@@ -665,6 +681,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 
   /* ---------- 정기시험 화면 (이전과 동일) ---------- */
   var reg=Engine("","파일을 올리면 등급컷이 여기에 나타납니다.");
+  var regMeta=null;
   function loadReg(f){
     readTable(f,function(tb){
       var p=parseTable(tb);
@@ -674,7 +691,9 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       byId("fstat").textContent=(p.fileN!==null&&p.fileN!==p.numericCount)?"주의: 파일의 응시인원 합계는 "+p.fileN+"명인데 점수가 있는 칸은 "+p.numericCount+"개입니다.":"";
       var fl=p.meta.full>0?p.meta.full:0;
       if(fl)byId("full").value=fl;
-      reg.setData(sc,classCards(groupByClass(p.entries,p.classes)),noteOf(p.zeros,p.dropped.length),fl);
+      regMeta=p.meta;
+      var rg=groupByClass(p.entries,p.classes);
+      reg.setData(sc,classCards(rg),noteOf(p.zeros,p.dropped.length),fl,gstats(rg));
     },function(){byId("fstat").textContent="파일을 읽지 못했습니다. 나이스에서 저장한 XLS data 파일인지 확인해 주세요."});
   }
   byId("full").addEventListener("input",function(e){reg.setFull(parseFloat(e.target.value))});
@@ -857,7 +876,8 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     if(blanks)warns.push("일부 항목의 칸이 비어 있는 학생 "+blanks+"명은 그 항목을 0점으로 계산했습니다.");
     byId("sumSummary").innerHTML=list.map(function(a){return '<div class="sumline"><span>'+esc(a.name)+'</span><b>'+fmt(a.ratio)+'%</b></div>'}).join("");
     byId("sumResWarn").textContent=warns.join(" ");
-    sumEng.setData(total.map(function(x){return x.v}),classCards(groupByClass(total,[])),noteOf(zeroStu,Object.keys(dropSet).length),100);
+    var sg=groupByClass(total,[]);
+    sumEng.setData(total.map(function(x){return x.v}),classCards(sg),noteOf(zeroStu,Object.keys(dropSet).length),100,gstats(sg));
     if(!byId("achSec").hidden)renderAch();
     byId("sumsetup").hidden=true;
     byId("sumresult").hidden=false;
@@ -920,6 +940,229 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   byId("sumBack").onclick=function(){byId("sumresult").hidden=true;byId("sumsetup").hidden=false;window.scrollTo(0,0)};
   renderFileList();
   renderRows();
+
+  /* ---------- 결과 내보내기: 배포용 이미지(PNG)와 PDF ---------- */
+  // d: {title, sub, ratios, rows, stats, note, groups, hist, ach, dateText}
+  // mode: "cut"(등급컷만, 배포용 이미지) | "full"(전체 분석, PDF)
+  function renderReport(d,mode,mk){
+    var cut=mode==="cut",W=cut?1080:1240,P=cut?56:64;
+    var INK="#333333",MUTED="#6b6b6b",BG="#f0f0f0",PANEL="#ffffff",ACC="#ff8c00",BAR="#bdbdbd",TRACK="#e4e4e4";
+    function F(wt,px){return wt+" "+px+'px "Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'}
+    function paint(c,H){
+      var y=P;
+      function T(s,x,yy,font,col,al){c.font=font;c.fillStyle=col;c.textAlign=al||"left";c.textBaseline="alphabetic";c.fillText(String(s),x,yy)}
+      function R(x,yy,w,h,col){c.fillStyle=col;c.fillRect(x,yy,w,h)}
+      function TW(s,font){c.font=font;return c.measureText(String(s)).width}
+      function H2(label){R(P,y+8,14,14,INK);T(label,P+26,y+24,F(700,28),INK);y+=24+18}
+      R(0,0,W,H,BG);
+      // 제목
+      T(d.title,P,y+(cut?46:42),F(700,cut?46:42),INK);y+=(cut?46:42)+16;
+      if(d.sub){T(d.sub,P,y+24,F(400,24),MUTED);y+=24+12}
+      if(d.ratios&&d.ratios.length){T("반영 비율 : "+d.ratios.join(" · "),P,y+22,F(400,22),MUTED);y+=22+12}
+      R(P,y+6,W-2*P,6,INK);y+=6+26;
+
+      // 등급컷
+      if(!cut){H2("등급컷")}
+      var rowH=cut?92:72,total=d.stats.n;
+      d.rows.forEach(function(r){
+        var h=rowH-8;
+        R(P,y,W-2*P,h,PANEL);
+        var rb=h-24;
+        R(P+12,y+12,rb,rb,INK);
+        T(r.g,P+12+rb/2,y+12+rb/2+(cut?11:9),F(700,cut?32:26),"#ffffff","center");
+        var tx=P+12+rb+24,base=y+h/2+(cut?(r.none?10:14):(r.none?9:11));
+        if(r.none){
+          T("해당 없음",tx,base,F(700,cut?30:24),MUTED);
+        }else{
+          var cf=F(700,cut?42:32);
+          T(r.main,tx,base,cf,INK);
+          var w=TW(r.main,cf);
+          R(tx,base+8,w,5,ACC);
+          T(r.sub,tx+w+20,base,F(400,cut?22:18),MUTED);
+        }
+        var rx=W-P-22;
+        T(r.n+"명",rx,y+(cut?40:30),F(700,cut?34:28),INK,"right");
+        if(total)T((r.n/total*100).toFixed(1)+"%",rx,y+(cut?68:52),F(400,cut?20:17),MUTED,"right");
+        y+=rowH;
+      });
+      y+=cut?6:10;
+
+      if(cut){
+        var s=d.stats;
+        T("응시 "+s.n+"명 · 평균 "+s.mean+" · 최고 "+s.max+" / 최저 "+s.min+(s.full?" · 만점 "+s.full+"점":""),P,y+22,F(400,22),MUTED);y+=22+10;
+        T(d.dateText,W-P,y+20,F(400,18),MUTED,"right");y+=20;
+        return y+P;
+      }
+
+      // 통계
+      var cw=(W-2*P-3*16)/4,sy=y;
+      [["응시 인원",d.stats.n+"명"],["평균",d.stats.mean],["표준편차",d.stats.sd],["최고 / 최저",d.stats.max+" / "+d.stats.min]].forEach(function(it,i){
+        var x=P+i*(cw+16),dark=i===0;
+        R(x,sy,cw,92,dark?INK:PANEL);
+        T(it[0],x+18,sy+32,F(400,20),dark?"#d6d6d6":MUTED);
+        T(it[1],x+18,sy+72,F(700,34),dark?"#ffffff":INK);
+      });
+      y=sy+92+14;
+      if(d.note){d.note.split("|").forEach(function(l){T(l,P,y+18,F(400,18),MUTED);y+=18+6})}
+      y+=18;
+
+      // 반별 현황
+      if(d.groups&&d.groups.length){
+        H2("반별 현황");
+        var cols=6,gw=(W-2*P-(cols-1)*12)/cols;
+        d.groups.forEach(function(g,i){
+          var x=P+(i%cols)*(gw+12),gy=y+Math.floor(i/cols)*(96+12);
+          R(x,gy,gw,96,PANEL);
+          T(g.c+"반",x+16,gy+34,F(700,26),INK);
+          T("응시 "+g.n+"명",x+16,gy+62,F(400,19),MUTED);
+          T("평균 "+g.mean,x+16,gy+84,F(400,19),MUTED);
+        });
+        y+=Math.ceil(d.groups.length/cols)*(96+12)+14;
+      }
+
+      // 점수 분포
+      if(d.hist){
+        H2("점수 분포");
+        var hh=210,hx=P,hw=W-2*P;
+        R(hx,y,hw,hh+60,PANEL);
+        var bw=(hw-48)/d.hist.bins.length,mx=Math.max.apply(null,d.hist.bins.concat([1]));
+        d.hist.bins.forEach(function(v,i){
+          var bh=v?Math.max(4,v/mx*hh):0;
+          R(hx+24+i*bw+2,y+16+hh-bh,bw-4,bh,d.hist.cutBins.indexOf(i)>=0?INK:BAR);
+        });
+        R(hx+24,y+16+hh,hw-48,3,INK);
+        T("0점",hx+24,y+16+hh+30,F(400,18),MUTED);
+        T(d.hist.top/2+"점",hx+hw/2,y+16+hh+30,F(400,18),MUTED,"center");
+        T(d.hist.top+"점",hx+hw-24,y+16+hh+30,F(400,18),MUTED,"right");
+        y+=hh+60+12;
+        T("5점 단위로 나눈 점수 분포이며, 검은 막대는 등급컷이 속한 구간입니다.",P,y+18,F(400,17),MUTED);y+=18+22;
+      }
+
+      // 성취도
+      if(d.ach&&d.ach.rows.length){
+        H2("성취도 · "+d.ach.label);
+        d.ach.rows.forEach(function(r){
+          R(P,y,W-2*P,52,PANEL);
+          R(P+8,y+8,36,36,INK);
+          T(r.name,P+26,y+33,F(700,r.name==="I"?22:20),"#ffffff","center");
+          if(r.small)T(r.small,P+26,y+45,F(400,10),"#ffffff","center");
+          T(r.rg,P+60,y+33,F(700,20),INK);
+          var bx=P+330,bwid=W-2*P-330-170;
+          R(bx,y+19,bwid,14,TRACK);
+          R(bx,y+19,bwid*r.pc/100,14,INK);
+          T(r.n+"명",W-P-100,y+33,F(700,20),INK,"right");
+          T(r.pc.toFixed(1)+"%",W-P-16,y+33,F(400,18),MUTED,"right");
+          y+=56;
+        });
+        if(d.ach.note)T(d.ach.note,P,y+18,F(400,17),MUTED),y+=18;
+        y+=20;
+      }
+
+      T("등급컷 계산기 · "+d.dateText,W-P,y+18,F(400,17),MUTED,"right");y+=18;
+      return y+P;
+    }
+    // 높이를 먼저 재고(임시 캔버스), 그 크기로 다시 그린다
+    var tmp=mk(W,8000),H=paint(tmp.getContext("2d"),8000);
+    var cv=mk(W,Math.ceil(H));
+    paint(cv.getContext("2d"),Math.ceil(H));
+    return cv;
+  }
+
+  // 캔버스 한 장을 PDF 한 페이지(가로 A4, 세로는 내용 길이)로 감싼다
+  function makePdf(canvas,jpegBytes){
+    var w=canvas.width,h=canvas.height,jpg;
+    if(jpegBytes)jpg=jpegBytes;
+    else{
+      var bin=atob(canvas.toDataURL("image/jpeg",0.92).split(",")[1]);
+      jpg=new Uint8Array(bin.length);
+      for(var i=0;i<bin.length;i++)jpg[i]=bin.charCodeAt(i);
+    }
+    var pw=595.28,ph=pw*h/w,parts=[],offs=[],len=0;
+    function enc(s){var a=new Uint8Array(s.length);for(var i=0;i<s.length;i++)a[i]=s.charCodeAt(i)&255;return a}
+    function add(u){parts.push(u);len+=u.length}
+    function addS(s){add(enc(s))}
+    function obj(n,body,stream){
+      offs[n]=len;addS(n+" 0 obj\n"+body+"\n");
+      if(stream){addS("stream\n");add(stream);addS("\nendstream\n")}
+      addS("endobj\n");
+    }
+    addS("%PDF-1.4\n");
+    obj(1,"<< /Type /Catalog /Pages 2 0 R >>");
+    obj(2,"<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+    obj(3,"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+pw.toFixed(2)+" "+ph.toFixed(2)+"] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>");
+    obj(4,"<< /Type /XObject /Subtype /Image /Width "+w+" /Height "+h+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+jpg.length+" >>",jpg);
+    var cs="q "+pw.toFixed(2)+" 0 0 "+ph.toFixed(2)+" 0 0 cm /Im0 Do Q";
+    obj(5,"<< /Length "+cs.length+" >>",enc(cs));
+    var xr=len;
+    addS("xref\n0 6\n0000000000 65535 f \n");
+    for(var n=1;n<=5;n++)addS(("0000000000"+offs[n]).slice(-10)+" 00000 n \n");
+    addS("trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n"+xr+"\n%%EOF\n");
+    var out=new Uint8Array(len),p=0;
+    parts.forEach(function(u){out.set(u,p);p+=u.length});
+    return out;
+  }
+
+  function dateText(){var d=new Date();return d.getFullYear()+"."+("0"+(d.getMonth()+1)).slice(-2)+"."+("0"+d.getDate()).slice(-2)+" 작성"}
+  function safeName(t){return String(t||"").replace(/[\\\/:*?"<>|]/g,"").replace(/\s+/g,"_")}
+  function download(blob,name){
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);a.download=name;
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+  }
+  function mkCanvas(w,h){var c=document.createElement("canvas");c.width=w;c.height=h;return c}
+  // 글꼴이 준비된 뒤에 그린다 (필요한 글자만 내려받음)
+  function withFonts(d,cb){
+    var t=JSON.stringify(d);
+    if(document.fonts&&document.fonts.load){
+      Promise.all([document.fonts.load('700 20px "Noto Sans KR"',t),document.fonts.load('400 20px "Noto Sans KR"',t)]).then(cb,cb);
+    }else cb();
+  }
+  function saveImage(d){
+    withFonts(d,function(){
+      renderReport(d,"cut",mkCanvas).toBlob(function(b){download(b,"등급컷_"+safeName(d.title)+".png")},"image/png");
+    });
+  }
+  function savePdf(d){
+    withFonts(d,function(){
+      var u=makePdf(renderReport(d,"full",mkCanvas));
+      download(new Blob([u],{type:"application/pdf"}),"분석결과_"+safeName(d.title)+".pdf");
+    });
+  }
+  function regData(){
+    var L=reg.getLast(),m=regMeta||{};
+    if(!L)return null;
+    var sub=[m.year,m.term,m.grade].filter(Boolean).join(" ");
+    return {title:m.subject||"정기시험",sub:sub+(m.exam?(sub?" · ":"")+m.exam:""),ratios:[],rows:L.rows,stats:L.stats,note:L.note,groups:L.groups,hist:L.hist,ach:null,dateText:dateText()};
+  }
+  function sumData(){
+    var L=sumEng.getLast(),list=items(),mt=null;
+    if(!L)return null;
+    for(var i=0;i<list.length;i++){if(list[i].parsed.meta.subject){mt=list[i].parsed.meta;break}}
+    var sub=mt?[mt.year,mt.term,mt.grade].filter(Boolean).join(" "):"";
+    var A=achCompute();
+    return {title:(mt&&mt.subject)||"종합점수",sub:sub+(sub?" · ":"")+"종합점수",
+      ratios:list.map(function(a){return a.name+" "+fmt(a.ratio)+"%"}),
+      rows:L.rows,stats:L.stats,note:L.note,groups:L.groups,hist:L.hist,
+      ach:A.rows.length?{label:(ach.mode==="fixed"?"고정분할 ":"추정분할 ")+(ach.lv===6?"A~E · 미도달":"A · B · C"),rows:A.rows,note:ach.lv===6?"I(미도달)은 공통과목에만 적용됩니다.":""}:null,
+      dateText:dateText()};
+  }
+  // 성취도 계산 (화면을 거치지 않고 현재 설정으로)
+  function achCompute(){
+    var nm=achNames(),bd=achBounds(),sc=sumEng.getScores(),n=sc.length;
+    var ok=bd.every(function(v,i){return isFinite(v)&&(i===0||v<bd[i-1])});
+    if(!n||!ok)return {rows:[]};
+    var cnt=nm.map(function(){return 0});
+    sc.forEach(function(x){var k=0;while(k<bd.length&&x<bd[k])k++;cnt[k]++});
+    return {rows:nm.map(function(name,k){
+      var rg=k===0?fmt(bd[0])+"점 이상":k===nm.length-1?fmt(bd[bd.length-1])+"점 미만":fmt(bd[k])+"점 이상 ~ "+fmt(bd[k-1])+"점 미만";
+      return {name:name==="미도달"?"I":name,small:name==="미도달"?"미도달":"",rg:rg,n:cnt[k],pc:cnt[k]/n*100};
+    })};
+  }
+  byId("imgBtn").onclick=function(){var d=regData();if(d)saveImage(d)};
+  byId("pdfBtn").onclick=function(){var d=regData();if(d)savePdf(d)};
+  byId("s-imgBtn").onclick=function(){var d=sumData();if(d)saveImage(d)};
+  byId("s-pdfBtn").onclick=function(){var d=sumData();if(d)savePdf(d)};
 
   /* ---------- 화면 전환 ---------- */
   function setView(v){
