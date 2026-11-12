@@ -2,8 +2,8 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
-/* 아이소타이프 스타일: 연회색 바탕, 숯색 글자, 주황 강조 하나. 그림자와 장식 없이 단색 면과 사람 픽토그램의 반복으로 수량을 표현한다.
-   레이아웃은 12칸 격자에 맞춘 왼쪽 정렬 블록들. 라이트 한 가지 모습만 쓴다. */
+/* 아이소타이프 스타일: 연회색 바탕, 숯색 글자, 주황 강조 하나. 그림자와 장식 없이 단색 면으로 구성한다.
+   레이아웃은 왼쪽 입력 / 오른쪽 결과 2단, 위쪽에 정기시험·종합점수 전환. 라이트 한 가지 모습만 쓴다. */
 :root{
   --bg:#f0f0f0; --fg:#333333; --accent:#ff8c00; --panel:#ffffff; --muted:#5f5f5f; --line:#333333; --bar:#bdbdbd; --warn:#a63a00;
   --sans:"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
@@ -19,9 +19,13 @@ main{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
 .pair>section[hidden]{display:none}
 @media(max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}.side{position:static}}
 @media(max-width:760px){.pair{grid-template-columns:minmax(0,1fr)}}
-header{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
 h1{font-size:1.7rem;font-weight:700;letter-spacing:-.02em;line-height:1.1;margin:0;text-wrap:balance}
 .sub{margin:6px 0 0;color:var(--muted)}
+.views{display:flex;border:3px solid var(--line);background:var(--panel)}
+.views button{font:inherit;font-weight:700;padding:9px 24px;border:0;background:var(--panel);color:var(--fg);cursor:pointer}
+.views button+button{border-left:3px solid var(--line)}
+.views button[aria-selected="true"]{background:var(--fg);color:#fff}
 section{display:flex;flex-direction:column;gap:12px;min-width:0;border-top:6px solid var(--line);padding-top:12px}
 h2{font-size:1.1rem;font-weight:700;margin:0;display:flex;align-items:center;gap:8px}
 h2::before{content:"";width:10px;height:10px;background:var(--fg);flex:none}
@@ -36,7 +40,7 @@ label,.note{font-size:.85rem;color:var(--muted)}
 .drop .btn{background:var(--fg);color:#fff;padding:10px 18px;font-weight:700;font-size:.9rem;white-space:nowrap}
 .drop input{position:absolute;opacity:0;width:1px;height:1px}
 .drop .btn{align-self:stretch;text-align:center}
-select,input[type=number]{font:inherit;color:var(--fg);background:var(--panel);border:2px solid var(--line);border-radius:0;padding:8px 10px;width:100%;box-sizing:border-box}
+select,input[type=number],input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px solid var(--line);border-radius:0;padding:8px 10px;width:100%;box-sizing:border-box}
 :focus-visible{outline:3px solid var(--accent);outline-offset:1px}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .ratios{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -59,6 +63,29 @@ details.adv[open] summary::after{content:"\2212"}
 .pane{padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px}
 .pane[hidden]{display:none}
 .msg{color:var(--warn);font-weight:700;font-size:.9rem;min-height:1.2em}
+.msg:empty{display:none}
+.side>section>[hidden]{display:none}
+#sumbox{display:flex;flex-direction:column;gap:14px}
+.regbox{display:flex;flex-direction:column;gap:12px}
+.step{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:2px solid var(--line)}
+.sh{display:flex;align-items:center;gap:8px;font-weight:700}
+.sn{width:22px;height:22px;background:var(--fg);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex:none}
+.arow{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;align-items:center}
+.pct{display:flex;align-items:center;gap:4px;font-weight:700}
+.pct input{text-align:right}
+.afile{background:var(--panel);border:2px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.afile.over{border-color:var(--accent);outline:3px solid var(--accent)}
+.ah{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ah b{overflow-wrap:anywhere}
+.ah span{font-size:.85rem;color:var(--muted);white-space:nowrap}
+.abtn{position:relative;display:block;text-align:center;background:var(--fg);color:#fff;font-weight:700;font-size:.9rem;padding:8px;cursor:pointer}
+.abtn input{position:absolute;opacity:0;width:1px;height:1px}
+.abtn:focus-within{outline:3px solid var(--accent);outline-offset:1px}
+.ast{font-size:.82rem;color:var(--muted);line-height:1.4}
+.ast.err{color:var(--warn);font-weight:700}
+.ast b{color:var(--fg)}
+.afull{display:flex;align-items:center;gap:8px;font-size:.85rem}
+.afull input{width:84px;padding:4px 8px;text-align:right}
 .meta{background:var(--panel);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
 .mcap{font-size:.8rem;color:var(--muted)}
 .msub{font-size:1.25rem;font-weight:700;line-height:1.3}
@@ -76,8 +103,7 @@ details.adv[open] summary::after{content:"\2212"}
 .gno{background:var(--fg);color:#fff;font-weight:700;font-size:1rem;height:34px;display:flex;align-items:center;justify-content:center}
 .gcut{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:10px;font-variant-numeric:tabular-nums;min-width:0}
 .gcut b{font-size:1.35rem;font-weight:700;line-height:1.2;letter-spacing:-.01em;border-bottom:3px solid var(--accent)}
-.gcut span,.ginfo span span{white-space:nowrap}
-.gcut span{font-size:.82rem;color:var(--muted)}
+.gcut span{font-size:.82rem;color:var(--muted);white-space:nowrap}
 .gcut.none b{border-bottom-color:var(--bar);color:var(--muted);font-size:1.1rem}
 .ginfo{display:grid;grid-template-columns:3.6rem 5.2rem minmax(0,1fr);column-gap:10px;align-items:baseline;width:23rem;font-variant-numeric:tabular-nums;text-align:left}
 .ginfo b{font-size:1.05rem;font-weight:700}
@@ -121,21 +147,51 @@ details.adv[open] summary::after{content:"\2212"}
       <h1>등급컷 계산기</h1>
       <p class="sub">나이스 교과목별 일람표 파일을 올리면 응시 인원과 등급컷이 바로 나옵니다.</p>
     </div>
+    <div class="views" role="tablist" aria-label="계산 종류">
+      <button type="button" role="tab" id="view-reg" aria-selected="true">정기시험</button>
+      <button type="button" role="tab" id="view-sum" aria-selected="false">종합점수</button>
+    </div>
   </header>
 
   <div class="layout">
     <aside class="side">
       <section>
-        <h2>파일과 기준</h2>
-        <label class="drop" id="drop">
-          <svg aria-hidden="true"><use href="#f"/></svg>
-          <b>XLS 파일을 끌어다 놓기</b>
-          <span>나이스 · 교과담임 · 정기시험조회 · 교과목별일람표조회(전체학급)<br>파일 형식 : XLS data</span>
-          <span class="btn">파일 선택</span>
-          <input id="file" type="file" accept=".xls,.xlsx,.csv,.html,.htm">
-        </label>
-        <div class="note" id="fstat" aria-live="polite"></div>
-        <div id="meta"></div>
+        <h2 id="sidetitle">파일과 기준</h2>
+
+        <div id="regbox" class="regbox">
+          <label class="drop" id="drop">
+            <svg aria-hidden="true"><use href="#f"/></svg>
+            <b>XLS 파일을 끌어다 놓기</b>
+            <span>나이스 · 교과담임 · 정기시험조회 · 교과목별일람표조회(전체학급)<br>파일 형식 : XLS data</span>
+            <span class="btn">파일 선택</span>
+            <input id="file" type="file" accept=".xls,.xlsx,.csv,.html,.htm">
+          </label>
+          <div class="note" id="fstat" aria-live="polite"></div>
+          <div id="meta"></div>
+        </div>
+
+        <div id="sumbox" hidden>
+          <div class="step">
+            <div class="sh"><span class="sn">1</span>영역 개수</div>
+            <select id="areaN" aria-label="영역 개수">
+              <option value="1">1개</option><option value="2">2개</option><option value="3" selected>3개</option>
+              <option value="4">4개</option><option value="5">5개</option><option value="6">6개</option>
+            </select>
+          </div>
+          <div class="step">
+            <div class="sh"><span class="sn">2</span>반영 비율</div>
+            <p class="note">평가계획서의 영역 이름과 비율(%)을 입력하세요. 합계는 100%여야 합니다.</p>
+            <div id="areaRatios" class="areas"></div>
+            <div class="note" id="areaSum"></div>
+            <div class="msg" id="areaWarn"></div>
+          </div>
+          <div class="step">
+            <div class="sh"><span class="sn">3</span>파일 올리기</div>
+            <p class="note">영역마다 나이스 교과목별 일람표(XLS data)를 올립니다.</p>
+            <div id="areaFiles" class="areas"></div>
+          </div>
+        </div>
+
         <div class="field">
           <label for="preset">등급제</label>
           <select id="preset">
@@ -177,7 +233,6 @@ details.adv[open] summary::after{content:"\2212"}
         <h2>등급컷</h2>
         <div class="stats" id="stats"></div>
         <div class="grades" id="out"></div>
-        
       </section>
 
       <div class="pair">
@@ -204,8 +259,20 @@ details.adv[open] summary::after{content:"\2212"}
   var PRESETS={"9":[4,7,12,17,20,17,12,7,4],"5":[10,24,32,24,10]};
   var $=function(id){return document.getElementById(id)};
   var ratios=PRESETS["5"].slice(),scores=[];
-  var table=[],fname="";
+  var view="reg";
+  var states={reg:{scores:[],classes:"",meta:"",note:""},sum:{scores:[],classes:""}};
+  var areas=[];
 
+  function fmt(x){return Math.round(x*100)/100}
+  function num(v){
+    if(typeof v==="number")return v;
+    if(typeof v==="string"&&/^\s*-?\d+(\.\d+)?\s*$/.test(v))return Number(v);
+    return null;
+  }
+  function txt(v){return String(v===undefined||v===null?"":v).replace(/\s+/g," ").trim()}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+  /* ---------- 등급 기준 ---------- */
   function renderRatios(){
     var box=$("ratios");box.innerHTML="";
     ratios.forEach(function(v,i){
@@ -217,7 +284,6 @@ details.adv[open] summary::after{content:"\2212"}
       });
     });
   }
-  function fmt(x){return Math.round(x*100)/100}
 
   var mode="pct",counts=[],rmode="round";
   function ksFromPct(n){
@@ -255,6 +321,7 @@ details.adv[open] summary::after{content:"\2212"}
     calc();
   }
 
+  /* ---------- 등급컷 계산 (정기시험·종합점수 공통) ---------- */
   function calc(){
     var sc=scores.slice().sort(function(a,b){return b-a});
     var n=sc.length,msg=$("msg"),out=$("out"),G=ratios.length;
@@ -267,7 +334,7 @@ details.adv[open] summary::after{content:"\2212"}
       msg.textContent=Math.abs(sum-100)>0.001?"비율의 합이 "+fmt(sum)+"%입니다. 100%로 맞춰 주세요.":"";
     }
     if(!n){
-      out.innerHTML='<div class="placeholder">파일을 올리면 등급컷이 여기에 나타납니다.</div>';
+      out.innerHTML='<div class="placeholder">'+(view==="sum"?"영역 비율과 파일을 모두 넣으면 등급컷이 여기에 나타납니다.":"파일을 올리면 등급컷이 여기에 나타납니다.")+'</div>';
       $("stats").innerHTML="";drawHist([],[]);return;
     }
     var ks=mode==="cnt"?ksFromCnt(n):ksFromPct(n),cum=0,list=[],cuts=[],prevM=0,prevCut=Infinity;
@@ -313,35 +380,30 @@ details.adv[open] summary::after{content:"\2212"}
     }).join("");
   }
 
+  /* ---------- 일람표 파일 읽기 ---------- */
   function decode(buf){
     var b=new Uint8Array(buf),head="";
     for(var i=0;i<Math.min(400,b.length);i++)head+=String.fromCharCode(b[i]);
     if(!/<\s*(html|table|\?xml)/i.test(head))return null;
     try{return new TextDecoder("utf-8",{fatal:true}).decode(b)}catch(e){return new TextDecoder("euc-kr").decode(b)}
   }
-  function num(v){
-    if(typeof v==="number")return v;
-    if(typeof v==="string"&&/^\s*-?\d+(\.\d+)?\s*$/.test(v))return Number(v);
-    return null;
-  }
-  function txt(v){return String(v===undefined||v===null?"":v).replace(/\s+/g," ").trim()}
-  function esc(s){return s.replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
-  function loadFile(f){
+  function readTable(f,ok,fail){
     var rd=new FileReader();
     rd.onload=function(e){
       try{
         var t=decode(e.target.result);
         var wb=t!==null?XLSX.read(t,{type:"string"}):XLSX.read(e.target.result,{type:"array"});
-        table=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:"",raw:true});
-        fname=f.name;analyze();
-      }catch(err){$("fstat").textContent="파일을 읽지 못했습니다. 나이스에서 저장한 XLS 파일인지 확인해 주세요."}
+        ok(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:"",raw:true}));
+      }catch(err){fail()}
     };
+    rd.onerror=fail;
     rd.readAsArrayBuffer(f);
   }
-  function metaHtml(h){
-    var cap=[],items=[],subject="",i;
+  // 위쪽 설명 줄을 '항목 : 값' 단위로 나눈다.
+  function parseMeta(tb,h){
+    var cap=[],items=[],subject="",exam="",full=null,i;
     for(i=0;i<h;i++){
-      table[i].forEach(function(v){
+      tb[i].forEach(function(v){
         var raw=String(v===undefined||v===null?"":v).trim();
         if(!raw||/^\d{4}\.\d{1,2}\.\d{1,2}\.?$/.test(raw))return;
         raw.split(/\s{2,}/).forEach(function(part){
@@ -350,7 +412,12 @@ details.adv[open] summary::after{content:"\2212"}
             if(!q)return;
             var m=q.match(/^(.+?)\s:\s(.+)$/);
             if(m){
-              if(m[1]==="교과목")subject=m[2];else items.push([m[1],m[2]]);
+              if(m[1]==="교과목")subject=m[2];
+              else{
+                items.push([m[1],m[2]]);
+                if(m[1]==="고사")exam=m[2];
+                if(m[1]==="만점"&&num(m[2])!==null)full=num(m[2]);
+              }
             }else if(/학년도$/.test(q))items.push(["학년도",q]);
             else if(/^\d+학기$/.test(q))items.push(["학기",q]);
             else if(/^(주간|야간)$/.test(q))items.push(["주야",q]);
@@ -360,62 +427,215 @@ details.adv[open] summary::after{content:"\2212"}
         });
       });
     }
-    if(!cap.length&&!items.length&&!subject)return "";
-    return '<div class="meta">'+
-      (cap.length?'<div class="mcap">'+esc(cap.join(" "))+'</div>':'')+
-      (subject?'<div class="msub">'+esc(subject)+'</div>':'')+
-      '<dl>'+items.map(function(x){return '<dt>'+esc(x[0])+'</dt><dd>'+esc(x[1])+'</dd>'}).join("")+'</dl></div>';
+    var html="";
+    if(cap.length||items.length||subject){
+      html='<div class="meta">'+
+        (cap.length?'<div class="mcap">'+esc(cap.join(" "))+'</div>':'')+
+        (subject?'<div class="msub">'+esc(subject)+'</div>':'')+
+        '<dl>'+items.map(function(x){return '<dt>'+esc(x[0])+'</dt><dd>'+esc(x[1])+'</dd>'}).join("")+'</dl></div>';
+    }
+    return {html:html,subject:subject,exam:exam,full:full};
   }
   // 일람표 구조: 왼쪽 위 칸이 '반번호', 오른쪽으로 반(1,2,3...), 아래로 번호(1,2,3...), 칸마다 점수.
   // 점수 아래쪽에는 응시인원·합계·평균 줄이 있어 점수 영역에서 제외한다.
-  function analyze(){
-    var st=$("fstat"),h=-1,k=0,i,c;
+  function parseTable(tb){
+    var h=-1,k=0,i,c;
     // '반번호' 칸은 A열이 아니어도 되고, 그 오른쪽에 반 번호(숫자)가 하나 이상 있으면 머리글 줄로 본다.
-    for(i=0;i<Math.min(table.length,40)&&h<0;i++){
-      for(c=0;c<table[i].length&&h<0;c++){
-        var a=txt(table[i][c]).replace(/\s/g,"");
-        if(/반/.test(a)&&/번호/.test(a)&&table[i].slice(c+1).some(function(v){return num(v)!==null})){h=i;k=c}
+    for(i=0;i<Math.min(tb.length,40)&&h<0;i++){
+      for(c=0;c<tb[i].length&&h<0;c++){
+        var a=txt(tb[i][c]).replace(/\s/g,"");
+        if(/반/.test(a)&&/번호/.test(a)&&tb[i].slice(c+1).some(function(v){return num(v)!==null})){h=i;k=c}
       }
     }
-    if(h<0){st.textContent="'반번호' 머리글을 찾지 못했습니다. 교과목별 일람표 파일이 맞는지 확인해 주세요.";return}
-    var cls=[];
-    for(c=k+1;c<table[h].length;c++)if(num(table[h][c])!==null)cls.push(c);
-    scores=[];var per={},absent=0,end=table.length;
-    cls.forEach(function(c){per[c]=[]});
-    for(i=h+1;i<table.length;i++){
-      if(num(table[i][k])===null){
-        if(txt(table[i][k])){end=i;break}
+    if(h<0)return {error:"'반번호' 머리글을 찾지 못했습니다. 교과목별 일람표 파일이 맞는지 확인해 주세요."};
+    var cols=[];
+    for(c=k+1;c<tb[h].length;c++)if(num(tb[h][c])!==null)cols.push(c);
+    var entries=[],absent=0,end=tb.length;
+    for(i=h+1;i<tb.length;i++){
+      if(num(tb[i][k])===null){
+        if(txt(tb[i][k])){end=i;break}
         continue;
       }
-      cls.forEach(function(c){
-        var n=num(table[i][c]);
-        if(n!==null){n=Number(n.toFixed(2));scores.push(n);per[c].push(n)}
-        else if(txt(table[i][c]))absent++;
+      cols.forEach(function(c){
+        var n=num(tb[i][c]);
+        if(n!==null)entries.push({c:num(tb[h][c]),n:num(tb[i][k]),v:Number(n.toFixed(2))});
+        else if(txt(tb[i][c]))absent++;
       });
     }
     var fileN=null;
-    for(i=end;i<table.length;i++){
-      if(/응시/.test(txt(table[i][k]))){
-        fileN=0;cls.forEach(function(c){var m=parseInt(txt(table[i][c]),10);if(!isNaN(m))fileN+=m});
+    for(i=end;i<tb.length;i++){
+      if(/응시/.test(txt(tb[i][k]))){
+        fileN=0;cols.forEach(function(c){var m=parseInt(txt(tb[i][c]),10);if(!isNaN(m))fileN+=m});
         break;
       }
     }
-    $("meta").innerHTML=metaHtml(h);
-    $("classes").innerHTML=cls.map(function(c){
-      var a=per[c],m=a.length?a.reduce(function(x,y){return x+y},0)/a.length:0;
-      return '<div class="cls"><svg aria-hidden="true"><use href="#b"/></svg><b>'+num(table[h][c])+'반</b><small>응시 <em>'+a.length+'명</em></small><small>평균 <em>'+(a.length?(Math.round(m*10)/10).toFixed(1):"-")+'</em></small></div>';
+    return {entries:entries,classes:cols.map(function(c){return num(tb[h][c])}),absent:absent,fileN:fileN,meta:parseMeta(tb,h)};
+  }
+  // groups: [{c:반, list:[점수...]}]
+  function classCards(groups){
+    return groups.map(function(g){
+      var a=g.list,m=a.length?a.reduce(function(x,y){return x+y},0)/a.length:0;
+      return '<div class="cls"><svg aria-hidden="true"><use href="#b"/></svg><b>'+g.c+'반</b><small>응시 <em>'+a.length+'명</em></small><small>평균 <em>'+(a.length?(Math.round(m*10)/10).toFixed(1):"-")+'</em></small></div>';
     }).join("");
-    $("classcard").hidden=false;
-    st.textContent=(fileN!==null&&fileN!==scores.length)?"주의: 파일의 응시인원 합계는 "+fileN+"명인데 계산된 응시 인원은 "+scores.length+"명입니다.":"";
+  }
+  function groupByClass(entries,order){
+    var by={},keys=order.slice();
+    entries.forEach(function(e){(by[e.c]=by[e.c]||[]).push(e.v)});
+    if(!keys.length)keys=Object.keys(by).map(Number).sort(function(a,b){return a-b});
+    return keys.map(function(c){return {c:c,list:by[c]||[]}});
+  }
+
+  /* ---------- 화면 전환 ---------- */
+  function applyState(){
+    var S=states[view];
+    scores=S.scores;
+    $("classes").innerHTML=S.classes;
+    $("classcard").hidden=!S.classes;
+    if(view==="reg"){$("meta").innerHTML=S.meta;$("fstat").textContent=S.note}
     deriveCounts();
     calc();
   }
+  function setView(v){
+    view=v;
+    $("view-reg").setAttribute("aria-selected",v==="reg");
+    $("view-sum").setAttribute("aria-selected",v==="sum");
+    $("regbox").hidden=v!=="reg";
+    $("sumbox").hidden=v!=="sum";
+    $("sidetitle").textContent=v==="reg"?"파일과 기준":"영역과 기준";
+    applyState();
+  }
 
-  $("file").onchange=function(e){if(e.target.files[0])loadFile(e.target.files[0])};
+  /* ---------- 정기시험 ---------- */
+  function loadReg(f){
+    readTable(f,function(tb){
+      var p=parseTable(tb);
+      if(p.error){$("fstat").textContent=p.error;return}
+      var sc=p.entries.map(function(e){return e.v});
+      states.reg={
+        scores:sc,
+        classes:classCards(groupByClass(p.entries,p.classes)),
+        meta:p.meta.html,
+        note:(p.fileN!==null&&p.fileN!==sc.length)?"주의: 파일의 응시인원 합계는 "+p.fileN+"명인데 계산된 응시 인원은 "+sc.length+"명입니다.":""
+      };
+      applyState();
+    },function(){$("fstat").textContent="파일을 읽지 못했습니다. 나이스에서 저장한 XLS data 파일인지 확인해 주세요."});
+  }
+
+  /* ---------- 종합점수 ---------- */
+  function newArea(i){return {name:"영역"+(i+1),ratio:0,full:100,parsed:null,fname:"",err:""}}
+  function setAreaCount(n){
+    while(areas.length<n)areas.push(newArea(areas.length));
+    areas.length=n;
+    renderAreaRatios();renderAreaFiles();recomputeSum();
+  }
+  function renderAreaRatios(){
+    var box=$("areaRatios");box.innerHTML="";
+    areas.forEach(function(a,i){
+      var d=document.createElement("div");d.className="arow";
+      d.innerHTML='<input type="text" id="an'+i+'" aria-label="영역 '+(i+1)+' 이름" maxlength="20" value="'+esc(a.name)+'">'+
+        '<div class="pct"><input type="number" id="ar'+i+'" aria-label="'+esc(a.name)+' 반영 비율(%)" min="0" max="100" step="0.1" placeholder="0" value="'+(a.ratio||"")+'"><span>%</span></div>';
+      box.appendChild(d);
+      d.querySelector("#an"+i).addEventListener("input",function(e){
+        a.name=e.target.value.trim()||("영역"+(i+1));
+        var t=$("afn"+i);if(t)t.textContent=a.name;
+      });
+      d.querySelector("#ar"+i).addEventListener("input",function(e){
+        a.ratio=parseFloat(e.target.value)||0;
+        var t=$("afr"+i);if(t)t.textContent=a.ratio?fmt(a.ratio)+"%":"비율 미입력";
+        recomputeSum();
+      });
+    });
+  }
+  function renderAreaFiles(){
+    var box=$("areaFiles");box.innerHTML="";
+    areas.forEach(function(a,i){
+      var d=document.createElement("div");d.className="afile";d.id="afbox"+i;
+      d.innerHTML='<div class="ah"><b id="afn'+i+'">'+esc(a.name)+'</b><span id="afr'+i+'">'+(a.ratio?fmt(a.ratio)+"%":"비율 미입력")+'</span></div>'+
+        '<label class="abtn"><span id="abl'+i+'">파일 선택</span><input type="file" id="af'+i+'" accept=".xls,.xlsx,.csv,.html,.htm"></label>'+
+        '<div class="ast" id="ast'+i+'"></div>'+
+        '<label class="afull" for="afull'+i+'">만점 <input type="number" id="afull'+i+'" min="0" step="any" value="'+a.full+'"></label>';
+      box.appendChild(d);
+      d.querySelector("#af"+i).addEventListener("change",function(e){if(e.target.files[0])readArea(i,e.target.files[0])});
+      d.querySelector("#afull"+i).addEventListener("input",function(e){a.full=parseFloat(e.target.value)||0;recomputeSum()});
+      ["dragenter","dragover"].forEach(function(t){d.addEventListener(t,function(e){e.preventDefault();d.classList.add("over")})});
+      ["dragleave","drop"].forEach(function(t){d.addEventListener(t,function(e){e.preventDefault();d.classList.remove("over")})});
+      d.addEventListener("drop",function(e){var f=e.dataTransfer.files[0];if(f)readArea(i,f)});
+      renderAreaStatus(i);
+    });
+  }
+  function renderAreaStatus(i){
+    var a=areas[i],el=$("ast"+i),p=a.parsed;
+    if(!el)return;
+    el.className="ast"+(a.err?" err":"");
+    if(a.err)el.textContent=a.err;
+    else if(!p)el.textContent="아직 올리지 않았습니다.";
+    else{
+      var parts=[];
+      if(p.meta.subject)parts.push('<b>'+esc(p.meta.subject)+'</b>');
+      if(p.meta.exam)parts.push(esc(p.meta.exam));
+      parts.push(p.entries.length+'명');
+      var s=parts.join(" · ");
+      if(p.fileN!==null&&p.fileN!==p.entries.length)s+=' · 파일 응시인원 '+p.fileN+'명과 다름';
+      el.innerHTML=s+'<br>'+esc(a.fname);
+    }
+    $("abl"+i).textContent=p?"파일 바꾸기":"파일 선택";
+  }
+  function readArea(i,f){
+    var a=areas[i];
+    readTable(f,function(tb){
+      var p=parseTable(tb);
+      if(p.error){a.parsed=null;a.err=p.error}
+      else{a.parsed=p;a.err="";a.fname=f.name;a.full=p.meta.full||100;var fi=$("afull"+i);if(fi)fi.value=a.full}
+      renderAreaStatus(i);recomputeSum();
+    },function(){
+      a.parsed=null;a.err="파일을 읽지 못했습니다. XLS data 형식인지 확인해 주세요.";
+      renderAreaStatus(i);recomputeSum();
+    });
+  }
+  // 학생 한 명의 종합점수 = Σ (영역 점수 ÷ 영역 만점 × 반영 비율). 반·번호가 같으면 같은 학생으로 본다.
+  function recomputeSum(){
+    var sr=0,ready=true,warns=[];
+    areas.forEach(function(a){sr+=a.ratio;if(!a.parsed||!(a.full>0))ready=false});
+    var okRatio=Math.abs(sr-100)<0.001;
+    var sumEl=$("areaSum");
+    sumEl.textContent="비율 합계 "+fmt(sr)+"% / 100%";
+    sumEl.className=okRatio?"note":"msg";
+    var out={scores:[],classes:""};
+    var subs=[];
+    areas.forEach(function(a){if(a.parsed&&a.parsed.meta.subject&&subs.indexOf(a.parsed.meta.subject)<0)subs.push(a.parsed.meta.subject)});
+    if(subs.length>1)warns.push("영역마다 교과목이 다릅니다. 파일을 확인해 주세요.");
+    if(ready&&okRatio){
+      var maps=areas.map(function(a){var m={};a.parsed.entries.forEach(function(e){m[e.c+"-"+e.n]=e});return m});
+      var union={};
+      maps.forEach(function(m){Object.keys(m).forEach(function(key){union[key]=1})});
+      var total=[],excluded=0;
+      Object.keys(union).forEach(function(key){
+        var t=0,all=true;
+        maps.forEach(function(m,i){
+          if(!m[key]){all=false;return}
+          t+=m[key].v/areas[i].full*areas[i].ratio;
+        });
+        if(all)total.push({c:maps[0][key]?maps[0][key].c:+key.split("-")[0],v:Number(t.toFixed(2))});
+        else excluded++;
+      });
+      if(excluded)warns.push("일부 영역 점수가 없는 학생 "+excluded+"명은 계산에서 제외했습니다.");
+      out.scores=total.map(function(x){return x.v});
+      out.classes=classCards(groupByClass(total.map(function(x){return {c:x.c,v:x.v}}),[]));
+    }
+    $("areaWarn").textContent=warns.join(" ");
+    states.sum=out;
+    if(view==="sum")applyState();
+  }
+
+  /* ---------- 이벤트 ---------- */
+  $("file").onchange=function(e){if(e.target.files[0])loadReg(e.target.files[0])};
   var drop=$("drop");
   ["dragenter","dragover"].forEach(function(t){drop.addEventListener(t,function(e){e.preventDefault();drop.classList.add("over")})});
   ["dragleave","drop"].forEach(function(t){drop.addEventListener(t,function(e){e.preventDefault();drop.classList.remove("over")})});
-  drop.addEventListener("drop",function(e){var f=e.dataTransfer.files[0];if(f)loadFile(f)});
+  drop.addEventListener("drop",function(e){var f=e.dataTransfer.files[0];if(f)loadReg(f)});
+  $("view-reg").onclick=function(){setView("reg")};
+  $("view-sum").onclick=function(){setView("sum")};
+  $("areaN").onchange=function(e){setAreaCount(parseInt(e.target.value,10))};
   $("round").addEventListener("change",function(e){if(e.target.value)rmode=e.target.value;calc()});
   $("tab-pct").onclick=function(){setMode("pct")};
   $("tab-cnt").onclick=function(){setMode("cnt")};
@@ -423,7 +643,7 @@ details.adv[open] summary::after{content:"\2212"}
     if(PRESETS[e.target.value]){ratios=PRESETS[e.target.value].slice();renderRatios();setMode("pct")}
   };
   renderRatios();
-  deriveCounts();
-  calc();
+  setAreaCount(3);
+  applyState();
 })();
 </script>
