@@ -61,13 +61,18 @@ td.cut{font-weight:700;font-size:1.05rem}
 .hist i{flex:1;min-width:0;background:var(--bar);border-radius:8px 8px 3px 3px}
 .hist i.hi{background:var(--bar-hi)}
 .axis{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.classes{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.cls{background:var(--soft);border-radius:18px;padding:10px 14px;display:flex;flex-direction:column;font-variant-numeric:tabular-nums}
+.cls b{font-family:var(--display);font-weight:400}
+.cls small{color:var(--muted)}
+#meta:empty{display:none}
 .placeholder{color:var(--muted);text-align:center;padding:26px 8px}
 </style>
 
 <main>
   <header>
     <h1>등급컷 계산기</h1>
-    <p class="sub">나이스 교과목별일람표 파일을 올리면 응시 인원과 등급컷이 바로 나옵니다.</p>
+    <p class="sub">나이스 교과목별 일람표 파일을 올리면 응시 인원과 등급컷이 바로 나옵니다.</p>
   </header>
 
   <section class="card">
@@ -78,11 +83,8 @@ td.cut{font-weight:700;font-size:1.05rem}
       <input id="file" type="file" accept=".xls,.xlsx,.csv,.html,.htm">
     </label>
     <div class="note" id="fstat" aria-live="polite"></div>
+    <div class="note" id="meta"></div>
     <div class="two">
-      <div class="field" id="colbox" hidden>
-        <label for="col">등급을 낼 점수 열</label>
-        <select id="col"></select>
-      </div>
       <div class="field">
         <label for="preset">등급제</label>
         <select id="preset">
@@ -113,11 +115,16 @@ td.cut{font-weight:700;font-size:1.05rem}
     <p class="note">컷 점수와 같은 점수는 모두 위 등급으로 올립니다. 그래서 동점이 많으면 인원이 0명인 등급이 생길 수 있습니다.</p>
   </section>
 
+  <section class="card" id="classcard" hidden>
+    <h2>반별 현황</h2>
+    <div class="classes" id="classes"></div>
+  </section>
+
   <section class="card">
     <h2>점수 분포</h2>
     <div class="hist" id="hist" role="img" aria-label="점수 분포 막대그래프"></div>
-    <div class="axis"><span>0점</span><span>50점</span><span>100점</span></div>
-    <p class="note">5점 단위 구간이고, 파란 진한 막대는 등급컷이 있는 구간입니다.</p>
+    <div class="axis"><span>0점</span><span id="ax-mid">50점</span><span id="ax-top">100점</span></div>
+    <p class="note">전체 점수를 20구간으로 나눈 분포이고, 진한 막대는 등급컷이 있는 구간입니다.</p>
   </section>
 </main>
 
@@ -127,7 +134,7 @@ td.cut{font-weight:700;font-size:1.05rem}
   var PRESETS={"9":[4,7,12,17,20,17,12,7,4],"5":[10,24,32,24,10]};
   var $=function(id){return document.getElementById(id)};
   var ratios=PRESETS["5"].slice(),scores=[];
-  var table=[],rows=[],fname="";
+  var table=[],fname="";
 
   function renderRatios(){
     var box=$("ratios");box.innerHTML="";
@@ -177,12 +184,15 @@ td.cut{font-weight:700;font-size:1.05rem}
     drawHist(sc,cuts);
   }
   function drawHist(sc,cuts){
+    var mxs=sc.length?Math.max.apply(null,sc):100;
+    var top=mxs>100?Math.ceil(mxs/10)*10:100,step=top/20;
+    $("ax-mid").textContent=top/2+"점";$("ax-top").textContent=top+"점";
     var bins=new Array(21).fill(0);
-    sc.forEach(function(x){bins[Math.min(20,Math.max(0,Math.floor(x/5)))]++});
+    sc.forEach(function(x){bins[Math.min(20,Math.max(0,Math.floor(x/step)))]++});
     var mx=Math.max.apply(null,bins.concat([1]));
     $("hist").innerHTML=bins.map(function(c,i){
-      var isCut=cuts.some(function(t){return Math.floor(t/5)===i});
-      return '<i class="'+(isCut?'hi':'')+'" style="height:'+Math.max(c?3:0,c/mx*100)+'%" title="'+(i*5)+'점대 '+c+'명"></i>';
+      var isCut=cuts.some(function(t){return Math.min(20,Math.floor(t/step))===i});
+      return '<i class="'+(isCut?'hi':'')+'" style="height:'+Math.max(c?3:0,c/mx*100)+'%" title="'+fmt(i*step)+'점대 '+c+'명"></i>';
     }).join("");
   }
 
@@ -192,65 +202,72 @@ td.cut{font-weight:700;font-size:1.05rem}
     if(!/<\s*(html|table|\?xml)/i.test(head))return null;
     try{return new TextDecoder("utf-8",{fatal:true}).decode(b)}catch(e){return new TextDecoder("euc-kr").decode(b)}
   }
-  function isNum(v){return typeof v==="number"||(typeof v==="string"&&/^\s*-?\d+(\.\d+)?\s*$/.test(v))}
+  function num(v){
+    if(typeof v==="number")return v;
+    if(typeof v==="string"&&/^\s*-?\d+(\.\d+)?\s*$/.test(v))return Number(v);
+    return null;
+  }
+  function txt(v){return String(v===undefined||v===null?"":v).replace(/\s+/g," ").trim()}
+  function esc(s){return s.replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
   function loadFile(f){
     var rd=new FileReader();
     rd.onload=function(e){
       try{
-        var txt=decode(e.target.result);
-        var wb=txt!==null?XLSX.read(txt,{type:"string"}):XLSX.read(e.target.result,{type:"array"});
+        var t=decode(e.target.result);
+        var wb=t!==null?XLSX.read(t,{type:"string"}):XLSX.read(e.target.result,{type:"array"});
         table=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:"",raw:true});
         fname=f.name;analyze();
       }catch(err){$("fstat").textContent="파일을 읽지 못했습니다. 나이스에서 저장한 XLS 파일인지 확인해 주세요."}
     };
     rd.readAsArrayBuffer(f);
   }
+  // 일람표 구조: 왼쪽 위 칸이 '반번호', 오른쪽으로 반(1,2,3...), 아래로 번호(1,2,3...), 칸마다 점수.
+  // 점수 아래쪽에는 응시인원·합계·평균 줄이 있어 점수 영역에서 제외한다.
   function analyze(){
-    var st=$("fstat"),h=-1,nc=-1;
-    for(var i=0;i<Math.min(table.length,40)&&h<0;i++){
-      for(var j=0;j<table[i].length;j++){
-        if(/^(성명|이름)$/.test(String(table[i][j]).replace(/\s/g,""))){h=i;nc=j;break}
+    var st=$("fstat"),h=-1,i,c;
+    for(i=0;i<Math.min(table.length,40)&&h<0;i++){
+      var a=txt(table[i][0]).replace(/\s/g,"");
+      if(/반/.test(a)&&/번호/.test(a)&&num(table[i][1])!==null)h=i;
+    }
+    if(h<0){st.textContent="'반번호' 머리글을 찾지 못했습니다. 교과목별 일람표 파일이 맞는지 확인해 주세요.";return}
+    var cls=[];
+    for(c=1;c<table[h].length;c++)if(num(table[h][c])!==null)cls.push(c);
+    scores=[];var per={},absent=0,end=table.length;
+    cls.forEach(function(c){per[c]=[]});
+    for(i=h+1;i<table.length;i++){
+      if(num(table[i][0])===null){
+        if(txt(table[i][0])){end=i;break}
+        continue;
+      }
+      cls.forEach(function(c){
+        var n=num(table[i][c]);
+        if(n!==null){n=Number(n.toFixed(2));scores.push(n);per[c].push(n)}
+        else if(txt(table[i][c]))absent++;
+      });
+    }
+    var fileN=null;
+    for(i=end;i<table.length;i++){
+      if(/응시/.test(txt(table[i][0]))){
+        fileN=0;cls.forEach(function(c){var m=parseInt(txt(table[i][c]),10);if(!isNaN(m))fileN+=m});
+        break;
       }
     }
-    if(h<0){st.textContent="'성명' 열을 찾지 못했습니다. 일람표 파일이 맞는지 확인해 주세요.";return}
-    var w=0;table.forEach(function(r){w=Math.max(w,r.length)});
-    var labels=[];
-    for(var c=0;c<w;c++){
+    var meta=[];
+    for(i=0;i<h;i++){
       var parts=[];
-      for(var r=Math.max(0,h-2);r<=h;r++){
-        var v=String(table[r][c]===undefined?"":table[r][c]).replace(/\s+/g," ").trim();
-        if(!v&&r<h){
-          for(var k=c-1;k>=0&&!v;k--)v=String(table[r][k]===undefined?"":table[r][k]).replace(/\s+/g," ").trim();
-        }
-        if(v&&parts.indexOf(v)<0)parts.push(v);
-      }
-      labels.push(parts.join(" "));
+      table[i].forEach(function(v){var t=txt(v);if(t&&!/^\d{4}\.\d{1,2}\.\d{1,2}\.?$/.test(t))parts.push(t)});
+      if(parts.length)meta.push(esc(parts.join("  ·  ")));
     }
-    rows=[];
-    for(var i=h+1;i<table.length;i++){
-      var nm=String(table[i][nc]).trim();
-      if(nm&&!/^(평균|합계|표준편차|계|최고|최저|총계)/.test(nm))rows.push(table[i]);
-    }
-    var cands=[];
-    for(var c=0;c<w;c++){
-      if(!labels[c]||/학년|번호|학급|석차|등급|순위|(^|\s)반(\s|$)/.test(labels[c]))continue;
-      var k=0;rows.forEach(function(r){if(isNum(r[c]))k++});
-      if(rows.length&&k/rows.length>=0.5)cands.push(c);
-    }
-    if(!cands.length){st.textContent="점수 열을 찾지 못했습니다.";return}
-    var pick=null,pri=[/학기말.*(성적|점수)|합계|합산/,/환산/,/원점수/];
-    pri.forEach(function(re){if(pick===null)cands.forEach(function(c){if(re.test(labels[c]))pick=c})});
-    if(pick===null)pick=cands[cands.length-1];
-    $("col").innerHTML=cands.map(function(c){return '<option value="'+c+'">'+labels[c].replace(/</g,"&lt;")+'</option>'}).join("");
-    $("col").value=String(pick);
-    $("colbox").hidden=false;
-    useColumn();
-  }
-  function useColumn(){
-    var c=+$("col").value;
-    scores=[];
-    rows.forEach(function(r){if(isNum(r[c]))scores.push(Number(r[c]))});
-    $("fstat").textContent=fname+" · 학생 "+rows.length+"명 중 점수가 있는 "+scores.length+"명으로 계산했습니다"+(rows.length>scores.length?" (미응시·공란 "+(rows.length-scores.length)+"명 제외)":"")+".";
+    $("meta").innerHTML=meta.join("<br>");
+    $("classes").innerHTML=cls.map(function(c){
+      var a=per[c],m=a.length?a.reduce(function(x,y){return x+y},0)/a.length:0;
+      return '<div class="cls"><b>'+num(table[h][c])+'반</b><small>응시 '+a.length+'명 · 평균 '+(a.length?fmt(m):"-")+'</small></div>';
+    }).join("");
+    $("classcard").hidden=false;
+    var m="학급 "+cls.length+"개, 응시 "+scores.length+"명";
+    if(absent)m+=" (미응시 등 문자로 표시된 "+absent+"칸 제외)";
+    if(fileN!==null)m+=fileN===scores.length?" · 파일의 응시인원 합계와 일치합니다.":" · 파일의 응시인원 합계는 "+fileN+"명으로 계산값과 다릅니다.";
+    st.textContent=fname+" · "+m;
     calc();
   }
 
@@ -259,7 +276,6 @@ td.cut{font-weight:700;font-size:1.05rem}
   ["dragenter","dragover"].forEach(function(t){drop.addEventListener(t,function(e){e.preventDefault();drop.classList.add("over")})});
   ["dragleave","drop"].forEach(function(t){drop.addEventListener(t,function(e){e.preventDefault();drop.classList.remove("over")})});
   drop.addEventListener("drop",function(e){var f=e.dataTransfer.files[0];if(f)loadFile(f)});
-  $("col").onchange=useColumn;
   $("round").onchange=calc;
   $("preset").onchange=function(e){
     if(PRESETS[e.target.value]){ratios=PRESETS[e.target.value].slice();renderRatios();calc()}
