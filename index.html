@@ -126,6 +126,12 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .afile:hover,.afile.over{border-color:var(--accent);outline:3px solid var(--accent)}
 .ah{display:flex;align-items:center;gap:8px}
 .fico{width:34px;height:23px;color:var(--fg);flex:none}
+.bulk{position:relative;display:flex;align-items:center;gap:12px;background:var(--panel);border:2px solid var(--line);padding:10px 14px;cursor:pointer}
+.bulk:hover,.bulk.over{border-color:var(--accent);outline:3px solid var(--accent)}
+.bulk:focus-within{outline:3px solid var(--accent)}
+.bulk b{display:block;color:var(--fg);font-size:.95rem}
+.bulk span{font-size:.8rem;color:var(--muted);line-height:1.5}
+.bulk input{position:absolute;opacity:0;width:1px;height:1px}
 .gdesc{grid-column:1 / -1;font-size:.8rem;color:var(--muted);line-height:1.5}
 .ah b{overflow-wrap:anywhere}
 .ah span{font-size:.85rem;color:var(--muted);white-space:nowrap}
@@ -151,7 +157,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .sumline span{color:var(--muted)}
 
 :root{--shadow:0 1px 3px rgba(0,0,0,.16),0 1px 2px rgba(0,0,0,.08)}
-.views,.drop,details.adv,.meta,.stat,.grow,.cls,.histwrap,.afile,.back,.sumsum,.placeholder,.opts label,.run:not(:disabled),.drop .btn,.abtn{box-shadow:var(--shadow)}
+.views,.drop,.bulk,details.adv,.meta,.stat,.grow,.cls,.histwrap,.afile,.back,.sumsum,.placeholder,.opts label,.run:not(:disabled),.drop .btn,.abtn{box-shadow:var(--shadow)}
 .tabs button[aria-selected="true"]{box-shadow:var(--shadow)}
 .views button[aria-selected="true"]{box-shadow:inset 0 2px 3px rgba(0,0,0,.14)}
 </style>
@@ -314,7 +320,10 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
         '</section>'+
         '<section>'+
           '<h2>2. 파일 올리기</h2>'+
-          '<p class="note">항목마다 일람표(XLS data)를 끌어다 놓거나 선택하세요.</p>'+
+          '<label class="bulk" id="bulkDrop"><svg class="fico" aria-hidden="true"><use href="#f"/></svg>'+
+            '<span><b>여러 파일을 한꺼번에 올리기</b>파일 탐색기에서 모두 선택해 한 번에 끌어다 놓거나 선택하세요.<br>1차·2차 정기시험은 파일 내용으로 자동 분류하고, 수행평가는 빈 영역에 순서대로 넣습니다.</span>'+
+            '<input type="file" id="bulkFile" multiple accept=".xls,.xlsx,.csv,.html,.htm"></label>'+
+          '<div class="note" id="bulkMsg" aria-live="polite"></div>'+
           '<div id="itemFiles" class="items files"></div>'+
         '</section>'+
       '</div>'+
@@ -578,7 +587,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   function dropTarget(el,onFile){
     ["dragenter","dragover"].forEach(function(t){el.addEventListener(t,function(e){e.preventDefault();el.classList.add("over")})});
     ["dragleave","drop"].forEach(function(t){el.addEventListener(t,function(e){e.preventDefault();el.classList.remove("over")})});
-    el.addEventListener("drop",function(e){var f=e.dataTransfer.files[0];if(f)onFile(f)});
+    el.addEventListener("drop",function(e){var fs=e.dataTransfer.files;if(fs&&fs.length)onFile(fs[0],fs)});
   }
 
   /* ---------- 정기시험 화면 (이전과 동일) ---------- */
@@ -679,11 +688,11 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       }
       var f=document.createElement("div");f.className="afile";
       f.innerHTML='<div class="ah"><svg class="fico" aria-hidden="true"><use href="#f"/></svg><b id="hn-'+a.id+'">'+esc(a.name)+'</b></div>'+
-        '<label class="abtn"><span id="bl-'+a.id+'">파일 선택</span><input type="file" id="fi-'+a.id+'" accept=".xls,.xlsx,.csv,.html,.htm"></label>'+
+        '<label class="abtn"><span id="bl-'+a.id+'">파일 선택</span><input type="file" id="fi-'+a.id+'" multiple accept=".xls,.xlsx,.csv,.html,.htm"></label>'+
         '<div class="ast" id="st-'+a.id+'"></div>';
       fb.appendChild(f);
-      f.querySelector("#fi-"+a.id).addEventListener("change",function(e){if(e.target.files[0])readItem(a,e.target.files[0])});
-      dropTarget(f,function(file){readItem(a,file)});
+      f.querySelector("#fi-"+a.id).addEventListener("change",function(e){var fl=e.target.files;if(fl.length>1)bulkAssign(fl);else if(fl[0])readItem(a,fl[0])});
+      dropTarget(f,function(file,all){if(all&&all.length>1)bulkAssign(all);else readItem(a,file)});
       renderStatus(a);
     });
   }
@@ -738,6 +747,40 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       :s.missing?"파일 "+s.missing+"개를 더 올려 주세요.":"산출할 수 있습니다.";
     byId("sumRun").disabled=!s.ready;
   }
+  // 여러 파일을 한 번에 받아 1차·2차는 파일 안의 '고사' 값으로, 나머지는 빈 수행평가 영역에 순서대로 배치한다.
+  function bulkAssign(files){
+    var arr=Array.prototype.slice.call(files).sort(function(x,y){return x.name<y.name?-1:x.name>y.name?1:0});
+    var parsed=[],skipped=[],pending=arr.length;
+    if(!pending)return;
+    byId("bulkMsg").textContent="파일을 읽는 중입니다…";
+    function done(){
+      if(--pending)return;
+      var placed=[],rest=[];
+      parsed.sort(function(x,y){return x.f.name<y.f.name?-1:x.f.name>y.f.name?1:0});
+      function put(a,x){a.parsed=x.p;a.err="";a.fname=x.f.name;renderStatus(a);placed.push(a.name)}
+      parsed.forEach(function(x){
+        var m=(x.p.meta.exam||"").match(/([12])\s*차/);
+        if(!m){rest.push(x);return}
+        var one=m[1]==="1";
+        if(one?has1:has2)put(one?ex1:ex2,x);
+        else skipped.push(x.f.name+" ("+m[1]+"차 정기시험이 선택되어 있지 않음)");
+      });
+      var slots=perf.slice(0,perfN),pool=slots.filter(function(a){return !a.parsed}).concat(slots.filter(function(a){return a.parsed}));
+      rest.forEach(function(x){
+        var a=pool.shift();
+        if(a)put(a,x);else skipped.push(x.f.name+" (넣을 수행평가 영역이 없음)");
+      });
+      byId("bulkMsg").textContent=(placed.length?placed.length+"개 파일을 넣었습니다: "+placed.join(" · ")+". ":"")+(skipped.length?"넣지 못한 파일: "+skipped.join(", ")+".":"");
+      recomputeSum();
+    }
+    arr.forEach(function(f){
+      readTable(f,function(tb){
+        var p=parseTable(tb);
+        if(p.error)skipped.push(f.name+" (일람표가 아님)");else parsed.push({f:f,p:p});
+        done();
+      },function(){skipped.push(f.name+" (읽지 못함)");done()});
+    });
+  }
   // 학생 한 명의 종합점수 = Σ (점수 ÷ 만점 × 반영 비율). 반·번호가 같으면 같은 학생으로 본다.
   function runSum(){
     var s=sumStatus();
@@ -769,6 +812,8 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     byId("sumresult").hidden=false;
     window.scrollTo(0,0);
   }
+  byId("bulkFile").addEventListener("change",function(e){if(e.target.files.length)bulkAssign(e.target.files);e.target.value=""});
+  dropTarget(byId("bulkDrop"),function(f,all){bulkAssign(all)});
   byId("sumRun").onclick=runSum;
   byId("sumBack").onclick=function(){byId("sumresult").hidden=true;byId("sumsetup").hidden=false;window.scrollTo(0,0)};
   byId("perfN").onchange=function(e){perfN=parseInt(e.target.value,10);renderPerfRows();renderFiles();recomputeSum()};
