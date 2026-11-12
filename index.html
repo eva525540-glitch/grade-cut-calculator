@@ -1,0 +1,270 @@
+<title>등급컷 계산기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 위에 파일 올리는 큰 둥근 상자, 아래에 결과 카드들. 좁은 화면에서는 한 열 */
+:root{
+  --bg:#eaf0f7; --panel:#ffffff; --fg:#1f2a3a; --muted:#6b7a90; --line:#dbe4ef;
+  --accent:#3b6fe0; --accent-fg:#ffffff; --soft:#e4ecfb; --warn:#c2512f;
+  --bar:#c3d3f3; --bar-hi:#3b6fe0;
+  --g1:#3b6fe0; --g2:#2f9d8a; --g3:#d9a21e; --g4:#e07a3b; --g5:#d4566b; --g6:#8a6bd1; --g7:#5a8f3a; --g8:#6b7a90; --g9:#9a7a5a;
+  --display:"Gowun Dodum","Noto Sans KR",sans-serif; --sans:"Noto Sans KR",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141b26; --panel:#1d2635; --fg:#e8eef8; --muted:#93a1b8; --line:#2c3850;
+  --accent:#7ba0f5; --accent-fg:#0f1624; --soft:#26324a; --warn:#f0906f;
+  --bar:#33445f; --bar-hi:#7ba0f5; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141b26; --panel:#1d2635; --fg:#e8eef8; --muted:#93a1b8; --line:#2c3850;
+  --accent:#7ba0f5; --accent-fg:#0f1624; --soft:#26324a; --warn:#f0906f;
+  --bar:#33445f; --bar-hi:#7ba0f5; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55;
+  padding-block:32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-family:var(--display);font-size:1.9rem;margin:0;font-weight:400;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0}
+.card{background:var(--panel);border-radius:28px;padding:22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+h2{font-family:var(--display);font-size:1.15rem;font-weight:400;margin:0}
+label,.note{font-size:.85rem;color:var(--muted)}
+.note{margin:0}
+.drop{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:30px 18px;border:2px dashed var(--line);border-radius:24px;background:var(--soft);cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--accent)}
+.drop b{font-family:var(--display);font-weight:400;font-size:1.2rem}
+.drop span{color:var(--muted);font-size:.85rem}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.drop:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.pill{display:inline-block;margin-top:8px;background:var(--accent);color:var(--accent-fg);border-radius:999px;padding:8px 20px;font-weight:500}
+select,input[type=number]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:9px 12px;width:100%;box-sizing:border-box}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(max-width:600px){.two{grid-template-columns:minmax(0,1fr)}}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ratios{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px}
+.msg{color:var(--warn);font-size:.85rem;min-height:1.2em}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat{background:var(--soft);border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.stat small{color:var(--muted);font-size:.8rem}
+.stat strong{font-family:var(--display);font-weight:400;font-size:1.7rem;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat.main{background:var(--accent);color:var(--accent-fg)}
+.stat.main small{color:inherit;opacity:.85}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:separate;border-spacing:0 6px;font-variant-numeric:tabular-nums}
+th{font-size:.78rem;color:var(--muted);font-weight:500;padding:0 14px 2px;text-align:right;white-space:nowrap}
+td{padding:11px 14px;text-align:right;background:var(--soft);white-space:nowrap}
+td:first-child{border-radius:16px 0 0 16px;text-align:left}
+td:last-child{border-radius:0 16px 16px 0}
+th:first-child{text-align:left}
+.badge{display:inline-flex;align-items:center;justify-content:center;width:2.1rem;height:2.1rem;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-weight:700}
+td.cut{font-weight:700;font-size:1.05rem}
+.empty{color:var(--muted);font-weight:400}
+.hist{display:flex;align-items:flex-end;gap:3px;height:150px}
+.hist i{flex:1;min-width:0;background:var(--bar);border-radius:8px 8px 3px 3px}
+.hist i.hi{background:var(--bar-hi)}
+.axis{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.placeholder{color:var(--muted);text-align:center;padding:26px 8px}
+</style>
+
+<main>
+  <header>
+    <h1>등급컷 계산기</h1>
+    <p class="sub">나이스 교과목별일람표 파일을 올리면 응시 인원과 등급컷이 바로 나옵니다.</p>
+  </header>
+
+  <section class="card">
+    <label class="drop" id="drop">
+      <b>XLS 파일을 여기에 끌어다 놓기</b>
+      <span>나이스 · 교과담임 · 정기시험조회 · 교과목별일람표조회(전체학급)에서 저장한 파일</span>
+      <span class="pill">파일 선택</span>
+      <input id="file" type="file" accept=".xls,.xlsx,.csv,.html,.htm">
+    </label>
+    <div class="note" id="fstat" aria-live="polite"></div>
+    <div class="two">
+      <div class="field" id="colbox" hidden>
+        <label for="col">등급을 낼 점수 열</label>
+        <select id="col"></select>
+      </div>
+      <div class="field">
+        <label for="preset">등급제</label>
+        <select id="preset">
+          <option value="5">5등급제 (10·24·32·24·10%)</option>
+          <option value="9">9등급제 (4·7·12·17·20·17·12·7·4%)</option>
+          <option value="custom">직접 입력</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="round">경계 인원 처리</label>
+        <select id="round">
+          <option value="round">반올림</option>
+          <option value="floor">내림</option>
+          <option value="ceil">올림</option>
+        </select>
+      </div>
+    </div>
+    <div class="ratios" id="ratios"></div>
+    <div class="msg" id="msg"></div>
+  </section>
+
+  <section class="card">
+    <div class="stats" id="stats"></div>
+    <div class="tw"><table>
+      <thead><tr><th>등급</th><th>비율</th><th>누적</th><th>컷 점수</th><th>인원</th></tr></thead>
+      <tbody id="out"></tbody>
+    </table></div>
+    <p class="note">컷 점수와 같은 점수는 모두 위 등급으로 올립니다. 그래서 동점이 많으면 인원이 0명인 등급이 생길 수 있습니다.</p>
+  </section>
+
+  <section class="card">
+    <h2>점수 분포</h2>
+    <div class="hist" id="hist" role="img" aria-label="점수 분포 막대그래프"></div>
+    <div class="axis"><span>0점</span><span>50점</span><span>100점</span></div>
+    <p class="note">5점 단위 구간이고, 파란 진한 막대는 등급컷이 있는 구간입니다.</p>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+  var PRESETS={"9":[4,7,12,17,20,17,12,7,4],"5":[10,24,32,24,10]};
+  var $=function(id){return document.getElementById(id)};
+  var ratios=PRESETS["5"].slice(),scores=[];
+  var table=[],rows=[],fname="";
+
+  function renderRatios(){
+    var box=$("ratios");box.innerHTML="";
+    ratios.forEach(function(v,i){
+      var d=document.createElement("div");d.className="field";
+      d.innerHTML='<label for="r'+i+'">'+(i+1)+'등급 (%)</label><input id="r'+i+'" type="number" min="0" max="100" step="0.1" value="'+v+'">';
+      box.appendChild(d);
+      d.querySelector("input").addEventListener("input",function(e){
+        ratios[i]=parseFloat(e.target.value)||0;$("preset").value="custom";calc();
+      });
+    });
+  }
+  function fmt(x){return Math.round(x*100)/100}
+
+  function calc(){
+    var sc=scores.slice().sort(function(a,b){return b-a});
+    var n=sc.length,msg=$("msg"),out=$("out");
+    var sum=ratios.reduce(function(a,b){return a+b},0);
+    msg.textContent=Math.abs(sum-100)>0.001?"비율의 합이 "+fmt(sum)+"%입니다. 100%로 맞춰 주세요.":"";
+    if(!n){
+      out.innerHTML='<tr><td colspan="5" class="placeholder">파일을 올리면 등급컷이 여기에 나타납니다.</td></tr>';
+      $("stats").innerHTML="";drawHist([],[]);return;
+    }
+    var mode=$("round").value,cum=0,prev=Infinity,list=[],cuts=[];
+    ratios.forEach(function(p,i){
+      cum+=p;
+      var k=Math[mode](n*cum/100+1e-9);
+      k=Math.max(0,Math.min(n,k));
+      var cut=k>0?sc[k-1]:null;
+      if(i===ratios.length-1)cut=sc[n-1];
+      var cnt=0,valid=cut!==null&&cut<prev;
+      if(valid){sc.forEach(function(x){if(x>=cut&&x<prev)cnt++});prev=cut;cuts.push(cut)}
+      list.push({g:i+1,p:p,c:cum,cut:valid?cut:null,n:cnt});
+    });
+    out.innerHTML=list.map(function(r){
+      return '<tr><td><span class="badge">'+r.g+'</span></td><td>'+fmt(r.p)+'%</td><td>'+fmt(r.c)+'%</td>'+
+        '<td class="cut">'+(r.cut===null?'<span class="empty">해당 없음</span>':fmt(r.cut)+'점 이상')+'</td>'+
+        '<td>'+r.n+'명</td></tr>';
+    }).join("");
+    var mean=sc.reduce(function(a,b){return a+b},0)/n;
+    var sd=Math.sqrt(sc.reduce(function(a,b){return a+(b-mean)*(b-mean)},0)/n);
+    $("stats").innerHTML=
+      '<div class="stat main"><small>응시 인원</small><strong>'+n+'명</strong></div>'+
+      '<div class="stat"><small>평균</small><strong>'+fmt(mean)+'</strong></div>'+
+      '<div class="stat"><small>표준편차</small><strong>'+fmt(sd)+'</strong></div>'+
+      '<div class="stat"><small>최고 · 최저</small><strong>'+fmt(sc[0])+' · '+fmt(sc[n-1])+'</strong></div>';
+    drawHist(sc,cuts);
+  }
+  function drawHist(sc,cuts){
+    var bins=new Array(21).fill(0);
+    sc.forEach(function(x){bins[Math.min(20,Math.max(0,Math.floor(x/5)))]++});
+    var mx=Math.max.apply(null,bins.concat([1]));
+    $("hist").innerHTML=bins.map(function(c,i){
+      var isCut=cuts.some(function(t){return Math.floor(t/5)===i});
+      return '<i class="'+(isCut?'hi':'')+'" style="height:'+Math.max(c?3:0,c/mx*100)+'%" title="'+(i*5)+'점대 '+c+'명"></i>';
+    }).join("");
+  }
+
+  function decode(buf){
+    var b=new Uint8Array(buf),head="";
+    for(var i=0;i<Math.min(400,b.length);i++)head+=String.fromCharCode(b[i]);
+    if(!/<\s*(html|table|\?xml)/i.test(head))return null;
+    try{return new TextDecoder("utf-8",{fatal:true}).decode(b)}catch(e){return new TextDecoder("euc-kr").decode(b)}
+  }
+  function isNum(v){return typeof v==="number"||(typeof v==="string"&&/^\s*-?\d+(\.\d+)?\s*$/.test(v))}
+  function loadFile(f){
+    var rd=new FileReader();
+    rd.onload=function(e){
+      try{
+        var txt=decode(e.target.result);
+        var wb=txt!==null?XLSX.read(txt,{type:"string"}):XLSX.read(e.target.result,{type:"array"});
+        table=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:"",raw:true});
+        fname=f.name;analyze();
+      }catch(err){$("fstat").textContent="파일을 읽지 못했습니다. 나이스에서 저장한 XLS 파일인지 확인해 주세요."}
+    };
+    rd.readAsArrayBuffer(f);
+  }
+  function analyze(){
+    var st=$("fstat"),h=-1,nc=-1;
+    for(var i=0;i<Math.min(table.length,40)&&h<0;i++){
+      for(var j=0;j<table[i].length;j++){
+        if(/^(성명|이름)$/.test(String(table[i][j]).replace(/\s/g,""))){h=i;nc=j;break}
+      }
+    }
+    if(h<0){st.textContent="'성명' 열을 찾지 못했습니다. 일람표 파일이 맞는지 확인해 주세요.";return}
+    var w=0;table.forEach(function(r){w=Math.max(w,r.length)});
+    var labels=[];
+    for(var c=0;c<w;c++){
+      var parts=[];
+      for(var r=Math.max(0,h-2);r<=h;r++){
+        var v=String(table[r][c]===undefined?"":table[r][c]).replace(/\s+/g," ").trim();
+        if(!v&&r<h){
+          for(var k=c-1;k>=0&&!v;k--)v=String(table[r][k]===undefined?"":table[r][k]).replace(/\s+/g," ").trim();
+        }
+        if(v&&parts.indexOf(v)<0)parts.push(v);
+      }
+      labels.push(parts.join(" "));
+    }
+    rows=[];
+    for(var i=h+1;i<table.length;i++){
+      var nm=String(table[i][nc]).trim();
+      if(nm&&!/^(평균|합계|표준편차|계|최고|최저|총계)/.test(nm))rows.push(table[i]);
+    }
+    var cands=[];
+    for(var c=0;c<w;c++){
+      if(!labels[c]||/학년|번호|학급|석차|등급|순위|(^|\s)반(\s|$)/.test(labels[c]))continue;
+      var k=0;rows.forEach(function(r){if(isNum(r[c]))k++});
+      if(rows.length&&k/rows.length>=0.5)cands.push(c);
+    }
+    if(!cands.length){st.textContent="점수 열을 찾지 못했습니다.";return}
+    var pick=null,pri=[/학기말.*(성적|점수)|합계|합산/,/환산/,/원점수/];
+    pri.forEach(function(re){if(pick===null)cands.forEach(function(c){if(re.test(labels[c]))pick=c})});
+    if(pick===null)pick=cands[cands.length-1];
+    $("col").innerHTML=cands.map(function(c){return '<option value="'+c+'">'+labels[c].replace(/</g,"&lt;")+'</option>'}).join("");
+    $("col").value=String(pick);
+    $("colbox").hidden=false;
+    useColumn();
+  }
+  function useColumn(){
+    var c=+$("col").value;
+    scores=[];
+    rows.forEach(function(r){if(isNum(r[c]))scores.push(Number(r[c]))});
+    $("fstat").textContent=fname+" · 학생 "+rows.length+"명 중 점수가 있는 "+scores.length+"명으로 계산했습니다"+(rows.length>scores.length?" (미응시·공란 "+(rows.length-scores.length)+"명 제외)":"")+".";
+    calc();
+  }
+
+  $("file").onchange=function(e){if(e.target.files[0])loadFile(e.target.files[0])};
+  var drop=$("drop");
+  ["dragenter","dragover"].forEach(function(t){drop.addEventListener(t,function(e){e.preventDefault();drop.classList.add("over")})});
+  ["dragleave","drop"].forEach(function(t){drop.addEventListener(t,function(e){e.preventDefault();drop.classList.remove("over")})});
+  drop.addEventListener("drop",function(e){var f=e.dataTransfer.files[0];if(f)loadFile(f)});
+  $("col").onchange=useColumn;
+  $("round").onchange=calc;
+  $("preset").onchange=function(e){
+    if(PRESETS[e.target.value]){ratios=PRESETS[e.target.value].slice();renderRatios();calc()}
+  };
+  renderRatios();
+  calc();
+})();
+</script>
