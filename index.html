@@ -123,7 +123,10 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .pct input::-webkit-outer-spin-button,.pct input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .afile{background:var(--panel);border:2px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:7px}
 .afile.over{border-color:var(--accent);outline:3px solid var(--accent)}
-.ah{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ah{display:flex;align-items:center;gap:8px}
+.fico{width:34px;height:23px;color:var(--fg);flex:none}
+.gdesc{grid-column:1 / -1;font-size:.8rem;color:var(--muted);line-height:1.5}
+.pct.sm input{font-size:.8rem;padding-top:3px;padding-bottom:3px;border-width:1px}
 .ah b{overflow-wrap:anywhere}
 .ah span{font-size:.85rem;color:var(--muted);white-space:nowrap}
 .abtn{position:relative;display:block;text-align:center;background:var(--fg);color:#fff;font-weight:700;font-size:.9rem;padding:8px;cursor:pointer}
@@ -146,6 +149,10 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .sumsum{background:var(--panel);padding:10px 14px;display:flex;flex-direction:column;gap:3px;font-size:.88rem}
 .sumline{display:flex;justify-content:space-between;gap:8px}
 .sumline span{color:var(--muted)}
+
+:root{--shadow:0 1px 3px rgba(0,0,0,.16),0 1px 2px rgba(0,0,0,.08)}
+.views,.drop,details.adv,.meta,.stat,.grow,.cls,.histwrap,.afile,.back,.sumsum,.placeholder,.opts label,.run:not(:disabled),.drop .btn,.abtn{box-shadow:var(--shadow)}
+.views button[aria-selected="true"],.tabs button[aria-selected="true"]{box-shadow:var(--shadow)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -596,7 +603,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 
   /* ---------- 종합점수 화면 ---------- */
   var sumEng=Engine("s-","산출할 수 있는 학생이 없습니다. 파일을 확인해 주세요.");
-  function mk(id,name,group,editable){return {id:id,name:name,group:group,editable:editable,ratio:0,full:100,parsed:null,fname:"",err:""}}
+  function mk(id,name,group,editable){return {id:id,name:name,group:group,editable:editable,ratio:0,full:editable?0:100,parsed:null,fname:"",err:""}}
   var ex1=mk("e1","1차 정기시험","정기시험",false),ex2=mk("e2","2차 정기시험","정기시험",false);
   var perf=[0,1,2,3].map(function(i){return mk("p"+i,"영역"+(i+1),"수행평가",true)});
   var has1=true,has2=true,perfN=2;
@@ -620,15 +627,22 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   }
   function renderExamRows(){
     var box=byId("examRows");box.innerHTML="";
+    var cap=document.createElement("div");cap.className="arow perf cap";
+    cap.innerHTML='<span></span><span>만점</span><span>비율</span>';
+    box.appendChild(cap);
     [ex1,ex2].forEach(function(a){
       var on=a===ex1?has1:has2;
-      var d=document.createElement("div");d.className="arow";
-      d.innerHTML='<label class="chk"><input type="checkbox" id="ck-'+a.id+'"'+(on?' checked':'')+'> '+esc(a.name)+' <span class="fl">100점</span></label>'+pctHtml(a,on);
+      var d=document.createElement("div");d.className="arow perf";
+      d.innerHTML='<label class="chk"><input type="checkbox" id="ck-'+a.id+'"'+(on?' checked':'')+'> '+esc(a.name)+'</label>'+
+        '<div class="pct sm"><input type="number" id="fu-'+a.id+'" aria-label="'+esc(a.name)+' 만점" min="0" step="any" placeholder="100" value="'+a.full+'"'+(on?'':' disabled')+'><span>점</span></div>'+
+        pctHtml(a,on);
       box.appendChild(d);
       bindRatio(d,a);
+      d.querySelector("#fu-"+a.id).addEventListener("input",function(e){a.full=parseFloat(e.target.value)||0;recomputeSum()});
       d.querySelector("#ck-"+a.id).addEventListener("change",function(e){
         if(a===ex1)has1=e.target.checked;else has2=e.target.checked;
         byId("ar-"+a.id).disabled=!e.target.checked;
+        byId("fu-"+a.id).disabled=!e.target.checked;
         renderFiles();recomputeSum();
       });
     });
@@ -643,7 +657,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     for(var i=0;i<perfN;i++)(function(a,i){
       var d=document.createElement("div");d.className="arow perf";
       d.innerHTML='<input type="text" id="an-'+a.id+'" aria-label="수행평가 영역 '+(i+1)+' 영역명" maxlength="20" value="'+esc(a.name)+'">'+
-        '<div class="pct"><input type="number" id="fu-'+a.id+'" aria-label="'+esc(a.name)+' 만점" min="0" step="any" placeholder="100" value="'+a.full+'"><span>점</span></div>'+pctHtml(a,true);
+        '<div class="pct"><input type="number" id="fu-'+a.id+'" aria-label="'+esc(a.name)+' 만점" min="0" step="any" placeholder="만점" value="'+(a.full||"")+'"><span>점</span></div>'+pctHtml(a,true);
       box.appendChild(d);
       bindRatio(d,a);
       d.querySelector("#fu-"+a.id).addEventListener("input",function(e){a.full=parseFloat(e.target.value)||0;recomputeSum()});
@@ -660,9 +674,12 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       if(a.group!==last){
         last=a.group;
         var g=document.createElement("div");g.className="grp";g.textContent=a.group;fb.appendChild(g);
+        var dsc=document.createElement("div");dsc.className="gdesc";
+        dsc.innerHTML="나이스 · 교과담임 · "+(a.group==="수행평가"?"수행평가조회":"정기시험조회")+" · 교과목별일람표조회(전체학급)<br>파일 형식 : XLS data";
+        fb.appendChild(dsc);
       }
       var f=document.createElement("div");f.className="afile";
-      f.innerHTML='<div class="ah"><b id="hn-'+a.id+'">'+esc(a.name)+'</b></div>'+
+      f.innerHTML='<div class="ah"><svg class="fico" aria-hidden="true"><use href="#f"/></svg><b id="hn-'+a.id+'">'+esc(a.name)+'</b></div>'+
         '<label class="abtn"><span id="bl-'+a.id+'">파일 선택</span><input type="file" id="fi-'+a.id+'" accept=".xls,.xlsx,.csv,.html,.htm"></label>'+
         '<div class="ast" id="st-'+a.id+'"></div>';
       fb.appendChild(f);
@@ -692,7 +709,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     readTable(f,function(tb){
       var p=parseTable(tb);
       if(p.error){a.parsed=null;a.err=p.error}
-      else{a.parsed=p;a.err="";a.fname=f.name;if(a.editable&&p.meta.full>0){a.full=p.meta.full;var fi=byId("fu-"+a.id);if(fi)fi.value=a.full}}
+      else{a.parsed=p;a.err="";a.fname=f.name;}
       renderStatus(a);recomputeSum();
     },function(){
       a.parsed=null;a.err="파일을 읽지 못했습니다. XLS data 형식인지 확인해 주세요.";
@@ -718,8 +735,8 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     byId("itemWarn").textContent=subjectWarn(s.list);
     byId("runHint").textContent=!s.list.length?"항목을 하나 이상 선택하세요."
       :!s.okRatio?"비율 합계를 100%로 맞춰 주세요."
-      :s.missing?"파일 "+s.missing+"개를 더 올려 주세요."
-      :!s.fullOk?"만점을 입력해 주세요.":"산출할 수 있습니다.";
+      :!s.fullOk?"만점을 입력해 주세요."
+      :s.missing?"파일 "+s.missing+"개를 더 올려 주세요.":"산출할 수 있습니다.";
     byId("sumRun").disabled=!s.ready;
   }
   // 학생 한 명의 종합점수 = Σ (점수 ÷ 만점 × 반영 비율). 반·번호가 같으면 같은 학생으로 본다.
