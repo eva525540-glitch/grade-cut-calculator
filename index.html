@@ -160,6 +160,21 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .views,.drop,.bulk,details.adv,.meta,.stat,.grow,.cls,.histwrap,.afile,.back,.sumsum,.placeholder,.opts label,.run:not(:disabled),.drop .btn,.abtn{box-shadow:var(--shadow)}
 .tabs button[aria-selected="true"]{box-shadow:var(--shadow)}
 .views button[aria-selected="true"]{box-shadow:inset 0 2px 3px rgba(0,0,0,.14)}
+
+.rtabs{align-self:flex-start}
+.achopt{display:flex;gap:16px;flex-wrap:wrap}
+.achopt fieldset{flex:1;min-width:210px}
+.achbd{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px}
+.ach{display:flex;flex-direction:column;gap:4px}
+.achrow{display:grid;grid-template-columns:34px 10.5rem minmax(0,1fr) 3.6rem 3.8rem;align-items:center;gap:12px;background:var(--panel);padding:6px 12px 6px 6px;font-variant-numeric:tabular-nums;box-shadow:var(--shadow)}
+.achrow .lv{background:var(--fg);color:#fff;font-weight:700;height:34px;display:flex;align-items:center;justify-content:center;font-size:.9rem;white-space:nowrap}
+.achrow .rg{font-weight:700;font-size:.92rem}
+.achrow .bar{height:14px;background:#e4e4e4}
+.achrow .bar i{display:block;height:100%;background:var(--fg)}
+.achrow .n{font-weight:700;text-align:right}
+.achrow .pc{text-align:right;color:var(--muted);font-size:.9rem}
+.achtot{display:flex;justify-content:flex-end;gap:14px;padding:4px 12px 0;font-size:.88rem;color:var(--muted);font-variant-numeric:tabular-nums}
+@media(max-width:760px){.achrow{grid-template-columns:34px minmax(0,1fr) 3.4rem 3.6rem}.achrow .bar{grid-column:1 / -1;order:5}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -329,6 +344,29 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       '</div>'+
       '<div class="runbar"><span class="note" id="runHint"></span><button type="button" class="run" id="sumRun" disabled>산출</button></div>';
 
+    var gsec=lay.querySelector(".content > section");
+    var rtabs=document.createElement("div");
+    rtabs.className="views rtabs";rtabs.setAttribute("role","tablist");rtabs.setAttribute("aria-label","분석 종류");
+    rtabs.innerHTML='<button type="button" role="tab" id="rtab-grade" aria-selected="true">등급컷</button>'+
+      '<button type="button" role="tab" id="rtab-ach" aria-selected="false">성취도</button>';
+    gsec.parentNode.insertBefore(rtabs,gsec);
+    var asec=document.createElement("section");
+    asec.id="achSec";asec.hidden=true;
+    asec.innerHTML=
+      '<h2>성취도</h2>'+
+      '<div class="achopt">'+
+        '<fieldset class="field"><legend>단계</legend><div class="opts">'+
+          '<label><input type="radio" name="achLv" value="6" checked> A~E · 미도달</label>'+
+          '<label><input type="radio" name="achLv" value="3"> A · B · C</label></div></fieldset>'+
+        '<fieldset class="field"><legend>분할 방식</legend><div class="opts">'+
+          '<label><input type="radio" name="achMode" value="fixed" checked> 고정분할</label>'+
+          '<label><input type="radio" name="achMode" value="est"> 추정분할</label></div></fieldset>'+
+      '</div>'+
+      '<div class="achbd" id="achBd"></div>'+
+      '<div class="msg" id="achMsg"></div>'+
+      '<div class="ach" id="achOut"></div>';
+    gsec.parentNode.insertBefore(asec,gsec.nextSibling);
+
     var res=document.createElement("div");
     res.id="sumresult";res.hidden=true;
     res.appendChild(lay);
@@ -467,7 +505,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     renderRatios();
     deriveCounts();
     calc();
-    return {setData:setData,setFull:setFull};
+    return {setData:setData,setFull:setFull,getScores:function(){return scores.slice()}};
   }
 
   /* ---------- 일람표 파일 읽기 ---------- */
@@ -808,12 +846,64 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     byId("sumSummary").innerHTML=list.map(function(a){return '<div class="sumline"><span>'+esc(a.name)+'</span><b>'+fmt(a.ratio)+'%</b></div>'}).join("");
     byId("sumResWarn").textContent=warns.join(" ");
     sumEng.setData(total.map(function(x){return x.v}),classCards(groupByClass(total,[])),noteOf(zeroStu,Object.keys(dropSet).length),100);
+    if(!byId("achSec").hidden)renderAch();
     byId("sumsetup").hidden=true;
     byId("sumresult").hidden=false;
     window.scrollTo(0,0);
   }
   byId("bulkFile").addEventListener("change",function(e){if(e.target.files.length)bulkAssign(e.target.files);e.target.value=""});
   dropTarget(byId("bulkDrop"),function(f,all){bulkAssign(all)});
+  /* ---------- 성취도 (종합점수) ---------- */
+  var FIX6=[90,80,70,60,40],FIX3=[80,60];
+  var ach={lv:6,mode:"fixed",est6:FIX6.slice(),est3:FIX3.slice()};
+  function achNames(){return ach.lv===6?["A","B","C","D","E","미도달"]:["A","B","C"]}
+  function achBounds(){return ach.mode==="fixed"?(ach.lv===6?FIX6:FIX3):(ach.lv===6?ach.est6:ach.est3)}
+  function renderAchInputs(){
+    var box=byId("achBd"),bd=achBounds(),nm=achNames();
+    box.innerHTML="";
+    bd.forEach(function(v,i){
+      var d=document.createElement("div");d.className="field";
+      d.innerHTML='<label for="ab'+i+'">'+nm[i]+' 이상 (점)</label><input type="number" id="ab'+i+'" step="any" value="'+v+'"'+(ach.mode==="fixed"?' disabled':'')+'>';
+      box.appendChild(d);
+      d.querySelector("input").addEventListener("input",function(e){
+        var arr=ach.lv===6?ach.est6:ach.est3;
+        arr[i]=parseFloat(e.target.value);
+        renderAch();
+      });
+    });
+  }
+  function renderAch(){
+    var nm=achNames(),bd=achBounds(),sc=sumEng.getScores(),n=sc.length,out=byId("achOut"),msg=byId("achMsg");
+    var okOrder=bd.every(function(v,i){return isFinite(v)&&(i===0||v<bd[i-1])});
+    msg.textContent=okOrder?"":"경계 점수는 A부터 아래로 갈수록 낮아야 합니다.";
+    if(!n){out.innerHTML='<div class="placeholder">산출 후 성취도 분포가 표시됩니다.</div>';return}
+    if(!okOrder){out.innerHTML="";return}
+    var cnt=nm.map(function(){return 0});
+    sc.forEach(function(x){
+      var k=0;
+      while(k<bd.length&&x<bd[k])k++;      // 위에서부터 경계 이상인 첫 단계
+      cnt[k]++;
+    });
+    var rows=nm.map(function(name,k){
+      var rg=k===0?fmt(bd[0])+"점 이상":k===nm.length-1?fmt(bd[bd.length-1])+"점 미만":fmt(bd[k])+"점 이상 ~ "+fmt(bd[k-1])+"점 미만";
+      var pc=cnt[k]/n*100;
+      return '<div class="achrow"><div class="lv">'+esc(name)+'</div><div class="rg">'+rg+'</div>'+
+        '<div class="bar" aria-hidden="true"><i style="width:'+pc.toFixed(1)+'%"></i></div>'+
+        '<div class="n">'+cnt[k]+'명</div><div class="pc">'+pc.toFixed(1)+'%</div></div>';
+    }).join("");
+    out.innerHTML=rows+'<div class="achtot"><span>합계</span><b>'+n+'명</b><span>100%</span></div>';
+  }
+  function showAch(on){
+    byId("achSec").hidden=!on;
+    byId("s-out").closest("section").hidden=on;
+    byId("rtab-grade").setAttribute("aria-selected",!on);
+    byId("rtab-ach").setAttribute("aria-selected",on);
+    if(on){renderAchInputs();renderAch()}
+  }
+  byId("rtab-grade").onclick=function(){showAch(false)};
+  byId("rtab-ach").onclick=function(){showAch(true)};
+  document.querySelectorAll('input[name="achLv"]').forEach(function(r){r.addEventListener("change",function(e){ach.lv=parseInt(e.target.value,10);renderAchInputs();renderAch()})});
+  document.querySelectorAll('input[name="achMode"]').forEach(function(r){r.addEventListener("change",function(e){ach.mode=e.target.value;renderAchInputs();renderAch()})});
   byId("sumRun").onclick=runSum;
   byId("sumBack").onclick=function(){byId("sumresult").hidden=true;byId("sumsetup").hidden=false;window.scrollTo(0,0)};
   byId("perfN").onchange=function(e){perfN=parseInt(e.target.value,10);renderPerfRows();renderFiles();recomputeSum()};
