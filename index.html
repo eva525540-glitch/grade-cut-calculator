@@ -175,6 +175,10 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .achrow .pc{text-align:right;color:var(--muted);font-size:.9rem}
 .achtot{display:flex;justify-content:flex-end;gap:14px;padding:4px 12px 0;font-size:.88rem;color:var(--muted);font-variant-numeric:tabular-nums}
 @media(max-width:760px){.achrow{grid-template-columns:34px minmax(0,1fr) 3.4rem 3.6rem}.achrow .bar{grid-column:1 / -1;order:5}}
+
+[hidden]{display:none!important}
+.achrow .lv{flex-direction:column;gap:1px;line-height:1}
+.achrow .lv small{font-size:.5rem;font-weight:400;letter-spacing:-.02em}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -336,7 +340,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
         '<section>'+
           '<h2>2. 파일 올리기</h2>'+
           '<label class="bulk" id="bulkDrop"><svg class="fico" aria-hidden="true"><use href="#f"/></svg>'+
-            '<span><b>여러 파일을 한꺼번에 올리기</b>파일 탐색기에서 모두 선택해 한 번에 끌어다 놓거나 선택하세요.<br>1차·2차 정기시험은 파일 내용으로 자동 분류하고, 수행평가는 빈 영역에 순서대로 넣습니다.</span>'+
+            '<span><b>파일 한꺼번에 올리기</b>파일 탐색기에서 모두 선택해 한 번에 끌어다 놓거나 선택하세요.<br>1차·2차 정기시험은 파일 내용으로 자동 분류하고, 수행평가는 빈 영역에 순서대로 넣습니다.</span>'+
             '<input type="file" id="bulkFile" multiple accept=".xls,.xlsx,.csv,.html,.htm"></label>'+
           '<div class="note" id="bulkMsg" aria-live="polite"></div>'+
           '<div id="itemFiles" class="items files"></div>'+
@@ -887,7 +891,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     var rows=nm.map(function(name,k){
       var rg=k===0?fmt(bd[0])+"점 이상":k===nm.length-1?fmt(bd[bd.length-1])+"점 미만":fmt(bd[k])+"점 이상 ~ "+fmt(bd[k-1])+"점 미만";
       var pc=cnt[k]/n*100;
-      return '<div class="achrow"><div class="lv">'+esc(name)+'</div><div class="rg">'+rg+'</div>'+
+      return '<div class="achrow"><div class="lv">'+(name==="미도달"?'<span>I</span><small>미도달</small>':esc(name))+'</div><div class="rg">'+rg+'</div>'+
         '<div class="bar" aria-hidden="true"><i style="width:'+pc.toFixed(1)+'%"></i></div>'+
         '<div class="n">'+cnt[k]+'명</div><div class="pc">'+pc.toFixed(1)+'%</div></div>';
     }).join("");
