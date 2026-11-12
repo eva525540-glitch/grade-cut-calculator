@@ -215,7 +215,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   <div class="layout">
     <aside class="side">
       <section>
-        <h2>파일과 기준</h2>
+        <h2>파일 올리기</h2>
         <div class="regbox">
         <label class="drop" id="drop">
           <svg aria-hidden="true"><use href="#f"/></svg>
@@ -231,13 +231,13 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
           <input id="full" type="number" min="1" step="any" value="100">
         </div>
         </div>
-        <div class="field">
-          <label for="preset">등급제</label>
-          <select id="preset">
-            <option value="5">5등급제 (10·24·32·24·10%)</option>
-            <option value="9">9등급제 (4·7·12·17·20·17·12·7·4%)</option>
-          </select>
-        </div>
+        <fieldset class="field" id="preset">
+          <legend>등급제</legend>
+          <div class="opts">
+            <label title="10·24·32·24·10%"><input type="radio" name="preset" value="5" checked> 5등급제</label>
+            <label title="4·7·12·17·20·17·12·7·4%"><input type="radio" name="preset" value="9"> 9등급제</label>
+          </div>
+        </fieldset>
         <details class="adv" id="adv">
           <summary>등급 비율·인원 직접 조정</summary>
           <div class="tabs" role="tablist" aria-label="조정 방식">
@@ -313,7 +313,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     lay.querySelectorAll("label[for]").forEach(function(l){l.setAttribute("for","s-"+l.getAttribute("for"))});
     lay.querySelectorAll("[aria-controls]").forEach(function(l){l.setAttribute("aria-controls","s-"+l.getAttribute("aria-controls"))});
     lay.querySelectorAll("[aria-labelledby]").forEach(function(l){l.setAttribute("aria-labelledby","s-"+l.getAttribute("aria-labelledby"))});
-    lay.querySelectorAll('input[name="round"]').forEach(function(i){i.name="s-round"});
+    lay.querySelectorAll('input[name="round"],input[name="preset"]').forEach(function(i){i.name="s-"+i.name});
     lay.querySelector(".side h2").textContent="등급 기준";
     var box=lay.querySelector(".regbox");
     var back=document.createElement("div");
@@ -505,9 +505,9 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
     $("round").addEventListener("change",function(e){if(e.target.value)rmode=e.target.value;calc()});
     $("tab-pct").onclick=function(){setMode("pct")};
     $("tab-cnt").onclick=function(){setMode("cnt")};
-    $("preset").onchange=function(e){
+    $("preset").addEventListener("change",function(e){
       if(PRESETS[e.target.value]){ratios=PRESETS[e.target.value].slice();renderRatios();setMode("pct")}
-    };
+    });
     renderRatios();
     deriveCounts();
     calc();
