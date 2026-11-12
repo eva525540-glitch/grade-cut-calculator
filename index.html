@@ -671,7 +671,7 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 
   /* ---------- 종합점수 화면 ---------- */
   var sumEng=Engine("s-","산출할 수 있는 학생이 없습니다. 파일을 확인해 주세요.");
-  function mk(id,kind,name){return {id:id,kind:kind,name:name,def:name,ratio:0,full:0,fullManual:false,fullFile:false,nameManual:false,parsed:null,fname:""}}
+  function mk(id,kind,name){return {id:id,kind:kind,name:name,def:name,ratio:0,ratioManual:false,full:0,fullManual:false,fullFile:false,nameManual:false,parsed:null,fname:""}}
   var ex1=mk("e1","exam","1차 정기시험"),ex2=mk("e2","exam","2차 정기시험");
   var perf=[0,1,2,3].map(function(i){return mk("p"+i,"perf","영역"+(i+1))});
   var allSlots=[ex1,ex2].concat(perf);
@@ -696,9 +696,10 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       if(mt.full>0){a.full=mt.full;a.fullFile=true}
       else{a.fullFile=false;a.full=a.kind==="exam"?100:0}
     }
+    if(a.kind==="perf"&&!a.ratioManual&&a.full>0)a.ratio=a.full;     // 수행평가는 만점과 같은 비율이 기본 (점수가 그대로 반영)
   }
   function removeItem(a){
-    a.parsed=null;a.fname="";a.ratio=0;a.full=0;a.fullManual=false;a.fullFile=false;a.nameManual=false;a.name=a.def;
+    a.parsed=null;a.fname="";a.ratio=0;a.ratioManual=false;a.full=0;a.fullManual=false;a.fullFile=false;a.nameManual=false;a.name=a.def;
     byId("bulkMsg").textContent="";
     renderFileList();renderRows();
   }
@@ -769,12 +770,13 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
         var t=byId("fn-"+a.id);if(t)t.textContent=a.name;
       });
       d.querySelector("#ar-"+a.id).addEventListener("input",function(e){
-        a.ratio=parseFloat(e.target.value)||0;
+        a.ratio=parseFloat(e.target.value)||0;a.ratioManual=e.target.value!=="";
         if(a.kind==="perf"&&!a.fullManual&&!a.fullFile){a.full=a.ratio;var fx=byId("fu-"+a.id);if(fx)fx.value=a.ratio||""}
         recomputeSum();
       });
       d.querySelector("#fu-"+a.id).addEventListener("input",function(e){
         a.full=parseFloat(e.target.value)||0;a.fullManual=e.target.value!=="";a.fullFile=false;
+        if(a.kind==="perf"&&!a.ratioManual&&a.full>0){a.ratio=a.full;var rx=byId("ar-"+a.id);if(rx)rx.value=a.ratio}
         recomputeSum();
       });
     });
