@@ -97,9 +97,9 @@ details.adv[open] summary::after{content:"\2212"}
 .hist i.hi{background:var(--fg)}
 .axis{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:4px}
 .views{display:flex;border:3px solid var(--line);background:var(--panel)}
-.views button{font:inherit;font-weight:700;padding:9px 24px;border:0;background:var(--panel);color:var(--fg);cursor:pointer}
+.views button{font:inherit;font-weight:700;padding:9px 24px;border:0;background:var(--fg);color:#fff;cursor:pointer}
 .views button+button{border-left:3px solid var(--line)}
-.views button[aria-selected="true"]{background:var(--fg);color:#fff}
+.views button[aria-selected="true"]{background:var(--panel);color:var(--fg)}
 .regbox,.sumbox{display:flex;flex-direction:column;gap:12px}
 .sumbox{gap:14px}
 input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px solid var(--line);border-radius:0;padding:8px 10px;width:100%;box-sizing:border-box}
@@ -108,7 +108,8 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .sn{width:22px;height:22px;background:var(--fg);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex:none}
 .chk{display:flex;align-items:center;gap:8px;font-size:.95rem;color:var(--fg);cursor:pointer}
 .chk input{width:18px;height:18px;margin:0;accent-color:var(--fg)}
-.arow.perf{grid-template-columns:minmax(0,1fr) 78px 84px}
+.arow.perf{grid-template-columns:minmax(0,1fr) 84px 84px}
+#sumsetup h2::before{display:none}
 .arow.cap{font-size:.78rem;color:var(--muted);font-weight:400}
 .fl{font-size:.78rem;color:var(--muted);font-weight:400}
 .mini{appearance:none;-webkit-appearance:none;width:auto;margin-left:8px;padding:1px 26px 1px 12px;border:2px solid var(--line);border-radius:999px;font:inherit;font-size:.78rem;font-weight:700;color:var(--fg);cursor:pointer;background:var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23333' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 10px center}
@@ -118,7 +119,8 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
 .arow{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;align-items:center}
 .aname{font-weight:700}
 .pct{display:flex;align-items:center;gap:4px;font-weight:700}
-.pct input{text-align:right}
+.pct input{text-align:right;min-width:0;padding-left:6px;padding-right:6px;-moz-appearance:textfield;appearance:textfield}
+.pct input::-webkit-outer-spin-button,.pct input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .afile{background:var(--panel);border:2px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:7px}
 .afile.over{border-color:var(--accent);outline:3px solid var(--accent)}
 .ah{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
@@ -297,11 +299,11 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
       '<div class="setup">'+
         '<section>'+
           '<h2>1. 반영비율</h2>'+
-          '<p class="note">평가계획서의 비율(%)을 입력하세요.<br>합계는 100%여야 합니다.<br>정기시험은 100점 만점, 수행평가는 만점을 입력합니다.</p>'+
+          '<p class="note">평가계획서의 비율(%)을 입력하세요.<br>합계는 100%여야 합니다.</p>'+
           '<div class="grp">정기시험</div>'+
           '<div id="examRows" class="items"></div>'+
           '<div class="grp">수행평가 <select id="perfN" class="mini" aria-label="수행평가 영역 개수">'+
-            '<option value="1">1개</option><option value="2" selected>2개</option><option value="3">3개</option><option value="4">4개</option></select></div>'+
+            '<option value="0">0개</option><option value="1">1개</option><option value="2" selected>2개</option><option value="3">3개</option><option value="4">4개</option></select></div>'+
           '<div id="perfRows" class="items"></div>'+
           '<div class="note" id="itemSum"></div>'+
           '<div class="msg" id="itemWarn"></div>'+
@@ -633,12 +635,14 @@ input[type=text]{font:inherit;color:var(--fg);background:var(--panel);border:2px
   }
   function renderPerfRows(){
     var box=byId("perfRows");box.innerHTML="";
-    var cap=document.createElement("div");cap.className="arow perf cap";
-    cap.innerHTML='<span>영역 이름</span><span>만점</span><span>비율</span>';
-    box.appendChild(cap);
+    if(perfN>0){
+      var cap=document.createElement("div");cap.className="arow perf cap";
+      cap.innerHTML='<span>영역명</span><span>만점</span><span>비율</span>';
+      box.appendChild(cap);
+    }
     for(var i=0;i<perfN;i++)(function(a,i){
       var d=document.createElement("div");d.className="arow perf";
-      d.innerHTML='<input type="text" id="an-'+a.id+'" aria-label="수행평가 영역 '+(i+1)+' 이름" maxlength="20" value="'+esc(a.name)+'">'+
+      d.innerHTML='<input type="text" id="an-'+a.id+'" aria-label="수행평가 영역 '+(i+1)+' 영역명" maxlength="20" value="'+esc(a.name)+'">'+
         '<div class="pct"><input type="number" id="fu-'+a.id+'" aria-label="'+esc(a.name)+' 만점" min="0" step="any" placeholder="100" value="'+a.full+'"><span>점</span></div>'+pctHtml(a,true);
       box.appendChild(d);
       bindRatio(d,a);
